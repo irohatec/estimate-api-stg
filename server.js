@@ -142,7 +142,10 @@ function nearestStationInfo(stations, lat, lng) {
   let best=null; for (const s of stations){ const d=haversine(lat,lng,s.lat,s.lng); if(!best||d<best.d) best={...s,d}; }
   return { name: best.name || null, minutes: Math.ceil(best.d/80) };
 }
-function computeEstimateV0(input, dataPack) {
+function computeEstimateV0(input, pack) {
+  // pack が未定義でも落ちないようにデフォルトを用意
+  const dataPack = pack || { l01_2025_points:[], l02_2023_points:[], stations:[], deals:[], meta:{} };
+
   const { type='building', area_sqm=60, built_year, lat=null, lng=null } = input || {};
   let base_ppsqm = null;
   if (lat && lng) base_ppsqm = idwNearest(dataPack.l01_2025_points,lat,lng,5) || idwNearest(dataPack.l02_2023_points,lat,lng,5);
@@ -195,6 +198,35 @@ function computeEstimateV0(input, dataPack) {
   };
 }
 
+// ── DataPack を確実に用意する（遅延初期化＋起動時初期化の両方） ──
+let dataPack = null;
+let dataPackReady = false;
+async function ensureDataPack() {
+  if (dataPack && dataPackReady) return;
+  const pack = new DataPack({ rootDir: process.cwd(), relPath: 'data/hiroshima' });
+  await pack.loadAll();
+  dataPack = pack;
+  dataPackReady = true;
+}
+
+// デバッグ用：読み込み状況
+app.get('/debug/datapack', async (_req, res) => {
+  try {
+    await ensureDataPack();
+    res.json({
+      ok: true,
+      counts: {
+        L02: dataPack.l02_2023_points.length,
+        L01: dataPack.l01_2025_points.length,
+        stations: dataPack.stations.length,
+        deals: dataPack.deals.length
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // ── API: /lead（認証不要）───────────────────────────────────
 app.post('/lead', async (req, res) => {
   try {
@@ -221,12 +253,12 @@ app.post('/lead', async (req, res) => {
 });
 
 // ── API: /estimate（要Auth）─────────────────────────────────
-let dataPack; // ★ モジュール変数として保持
 app.post('/estimate', requireAuth, async (req, res) => {
   try {
+    await ensureDataPack();                 // ★ 必ず準備
     const uid = (res.locals.user && res.locals.user.uid) || 'unknown';
     const input = req.body || {};
-    const result = computeEstimateV0(input, dataPack); // ★ ここで dataPack を使用
+    const result = computeEstimateV0(input, dataPack);
 
     const ref = await db.collection('estimates').add({ uid, input, result, ts: new Date() });
 
@@ -270,15 +302,12 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'INTERNAL_ERROR' });
 });
 
-// ── 起動：データを事前ロードしてから listen ───────────────
+// ── 起動時に一度ロードしてから listen（さらにルートでも ensure） ─
 (async () => {
   try {
-    const pack = new DataPack({ rootDir: process.cwd(), relPath: 'data/hiroshima' });
-    await pack.loadAll();
-    dataPack = pack; // ★ ここでモジュール変数にセット（これが今回の修正点）
+    await ensureDataPack();
   } catch (e) {
     console.warn('[DataPack] preload failed:', e.message);
-    dataPack = new DataPack({});
   }
   app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 })();

@@ -1,11 +1,13 @@
-// mailer.js (ESM) — 既存SMTPで送信。Fromは環境変数 SMTP_FROM を使用。
-// 「自分に送る」には返信不可の注記を自動で付与します。
+// mailer.js (ESM) — Xserver等の既存SMTP向け強化版
+// ・エンベロープFromをSMTP_USERに固定（envelope）
+// ・587はSTARTTLS必須（requireTLS）/ 465はSSL
+// ・詳細ログ（logger/debug）を出す
 import nodemailer from 'nodemailer';
 
 const {
   SMTP_HOST,
   SMTP_PORT,
-  SMTP_SECURE,
+  SMTP_SECURE, // "true" なら 465/SSL, それ以外は 587/STARTTLS
   SMTP_USER,
   SMTP_PASS,
   SMTP_FROM,
@@ -22,38 +24,54 @@ function getTransport() {
     console.warn('[mailer] SMTP not configured. Emails will be skipped.');
     return null;
   }
+  const secure = String(SMTP_SECURE || 'false').toLowerCase() === 'true';
   transport = nodemailer.createTransport({
     host: SMTP_HOST,
-    port: Number(SMTP_PORT || 587),
-    secure: String(SMTP_SECURE || 'false').toLowerCase() === 'true', // 465ならtrue
+    port: Number(SMTP_PORT || (secure ? 465 : 587)),
+    secure,                         // 465ならtrue / 587ならfalse
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    requireTLS: !secure,            // 587のときはSTARTTLSを必須
+    logger: true,                   // nodemailerの詳細ログ
+    debug: true,
+    tls: {
+      servername: SMTP_HOST,        // SNI一致
+      minVersion: 'TLSv1.2',
+      // ※ 証明書エラー時の暫定回避（基本は不要）:
+      // rejectUnauthorized: false,
+    },
   });
   return transport;
+}
+
+function withDisclaimer(html) {
+  const disclaimer =
+    `<p style="color:#666;font-size:12px;margin-top:16px">` +
+    `※ このメールは送信専用です。<b>返信しても届きません</b>。` +
+    `お問い合わせは公式サイトからお願いいたします。` +
+    `</p>`;
+  return `${html}${disclaimer}`;
 }
 
 /** ユーザー向け（「自分に送る」） */
 export async function sendUserMail(to, subject, html) {
   const t = getTransport();
   if (!t || !to) return;
-  const disclaimer =
-    `<p style="color:#666;font-size:12px;margin-top:16px">` +
-    `※ このメールは送信専用です。<b>返信しても届きません</b>。` +
-    `お問い合わせは公式サイトからお願いいたします。` +
-    `</p>`;
-  const body = `${html}${disclaimer}`;
-
+  const body = withDisclaimer(html);
   try {
-    await t.sendMail({
-      from: SMTP_FROM,          // 例: "Satei App <estimate@irohatec.com>"
-      sender: SMTP_USER,        // エンベロープ送信者（SMTPユーザーに合わせる）
+    const info = await t.sendMail({
+      from: SMTP_FROM,          // 表示用From（例: "Satei App <estimate@irohatec.com>"）
+      sender: SMTP_USER,        // 送信者（ヘッダ）
       to,
       subject,
       html: body,
-      // envelope: { from: SMTP_USER, to } // 必要なら明示
+      envelope: {               // ★ SMTPエンベロープ（実送信者/宛先）
+        from: SMTP_USER,        // 必ずSMTP_USERに固定（Xserver対策）
+        to
+      },
     });
-    console.log('[mailer] user mail sent:', to);
+    console.log('[mailer] user mail sent:', info.messageId);
   } catch (e) {
-    console.warn('[mailer] user mail failed:', e.message);
+    console.warn('[mailer] user mail failed:', e.message, e.response || '');
   }
 }
 
@@ -61,21 +79,18 @@ export async function sendUserMail(to, subject, html) {
 export async function sendNotifyMail(toCsv, subject, text) {
   const t = getTransport();
   if (!t || !toCsv) return;
-  const to = String(toCsv)
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
-
+  const to = String(toCsv).split(',').map(s => s.trim()).filter(Boolean);
   try {
-    await t.sendMail({
+    const info = await t.sendMail({
       from: SMTP_FROM,
       sender: SMTP_USER,
-      to,               // 複数可
+      to,
       subject,
-      text,             // プレーンテキストで十分
+      text,
+      envelope: { from: SMTP_USER, to }, // ★ envelope固定
     });
-    console.log('[mailer] notify mail sent:', to.join(','));
+    console.log('[mailer] notify mail sent:', info.messageId);
   } catch (e) {
-    console.warn('[mailer] notify mail failed:', e.message);
+    console.warn('[mailer] notify mail failed:', e.message, e.response || '');
   }
 }

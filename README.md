@@ -24,12 +24,10 @@ Render (onrender.com) にデプロイ → WordPress プラグインから呼び�
 
 ## Render設定
 
-- **Build Command**: *(指定不要。npm install 自動)*
 - **Start Command**: `node server.js`
 - **Instance Type**: Free → 本番前に Starter へ
-- **Region**: Singapore など（日本近傍）
+- **Region**: 近接リージョン（例: Singapore）
 
-## Firestore ルール
-
+## Firestore ルール（参考・任意）
 クライアント直アクセス禁止（Admin 経由のみ）：
 

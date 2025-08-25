@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// ★ ここを修正：named import に変更
+// named import（firebaseAdmin.js / mailer.js がnamed export想定）
 import { db, verifyIdTokenFromRequest } from './firebaseAdmin.js';
 import { sendUserMail, sendNotifyMail } from './mailer.js';
 
@@ -107,9 +107,6 @@ class DataPack {
     console.log(`[DataPack] loaded: L02=${this.l02_2023_points.length}, L01=${this.l01_2025_points.length}, stations=${this.stations.length}, deals=${this.deals.length}`);
   }
 }
-
-import fs from 'fs';
-import path from 'path';
 
 // ── 推定ロジック（v0）──────────────────────────────────────
 function haversine(lat1, lon1, lat2, lon2) {
@@ -276,11 +273,19 @@ app.use((err, _req, res, _next) => {
 // ── 起動：データを事前ロードしてから listen ───────────────
 (async () => {
   try {
-    dataPack = new DataPack({ rootDir: process.cwd(), relPath: 'data/hiroshima' });
-    await dataPack.loadAll();
+    const pack = new DataPack({ rootDir: process.cwd(), relPath: 'data/hiroshima' });
+    await pack.loadAll();
+    globalThis.__DATA_PACK__ = pack; // デバッグ用（任意）
   } catch (e) {
     console.warn('[DataPack] preload failed:', e.message);
-    dataPack = new DataPack({});
+    globalThis.__DATA_PACK__ = new DataPack({});
   }
+  // 参照を関数スコープ外に出さずに保持
+  // ルートでは globalThis.__DATA_PACK__ を使います
   app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 })();
+
+// ルートで利用するためのラッパ（上の即時関数後に評価される）
+Object.defineProperty(globalThis, 'dataPack', {
+  get() { return globalThis.__DATA_PACK__ || new DataPack({}); }
+});

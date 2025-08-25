@@ -5,12 +5,9 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// firebaseAdmin / mailer は ESM/CJS どちらでも動くように吸収
-import adminMod from './firebaseAdmin.js';
-const { db, verifyIdTokenFromRequest } = adminMod?.default || adminMod;
-
-import mailMod from './mailer.js';
-const { sendUserMail, sendNotifyMail } = mailMod?.default || mailMod;
+// ★ ここを修正：named import に変更
+import { db, verifyIdTokenFromRequest } from './firebaseAdmin.js';
+import { sendUserMail, sendNotifyMail } from './mailer.js';
 
 // v0: データはサーバ内の data/hiroshima/*.json を直接読む
 import fs from 'fs';
@@ -110,6 +107,9 @@ class DataPack {
     console.log(`[DataPack] loaded: L02=${this.l02_2023_points.length}, L01=${this.l01_2025_points.length}, stations=${this.stations.length}, deals=${this.deals.length}`);
   }
 }
+
+import fs from 'fs';
+import path from 'path';
 
 // ── 推定ロジック（v0）──────────────────────────────────────
 function haversine(lat1, lon1, lat2, lon2) {

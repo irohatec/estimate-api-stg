@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 dotenv.config();
 
-// named import（firebaseAdmin.js / mailer.js がnamed export想定）
+// named import（firebaseAdmin.js / mailer.js が named export 前提）
 import { db, verifyIdTokenFromRequest } from './firebaseAdmin.js';
 import { sendUserMail, sendNotifyMail } from './mailer.js';
 
@@ -221,12 +221,12 @@ app.post('/lead', async (req, res) => {
 });
 
 // ── API: /estimate（要Auth）─────────────────────────────────
-let dataPack;
+let dataPack; // ★ モジュール変数として保持
 app.post('/estimate', requireAuth, async (req, res) => {
   try {
     const uid = (res.locals.user && res.locals.user.uid) || 'unknown';
     const input = req.body || {};
-    const result = computeEstimateV0(input, dataPack);
+    const result = computeEstimateV0(input, dataPack); // ★ ここで dataPack を使用
 
     const ref = await db.collection('estimates').add({ uid, input, result, ts: new Date() });
 
@@ -275,17 +275,10 @@ app.use((err, _req, res, _next) => {
   try {
     const pack = new DataPack({ rootDir: process.cwd(), relPath: 'data/hiroshima' });
     await pack.loadAll();
-    globalThis.__DATA_PACK__ = pack; // デバッグ用（任意）
+    dataPack = pack; // ★ ここでモジュール変数にセット（これが今回の修正点）
   } catch (e) {
     console.warn('[DataPack] preload failed:', e.message);
-    globalThis.__DATA_PACK__ = new DataPack({});
+    dataPack = new DataPack({});
   }
-  // 参照を関数スコープ外に出さずに保持
-  // ルートでは globalThis.__DATA_PACK__ を使います
   app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
 })();
-
-// ルートで利用するためのラッパ（上の即時関数後に評価される）
-Object.defineProperty(globalThis, 'dataPack', {
-  get() { return globalThis.__DATA_PACK__ || new DataPack({}); }
-});

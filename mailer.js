@@ -1,54 +1,81 @@
-// mailer.js
-import nodemailer from "nodemailer";
+// mailer.js (ESM) — 既存SMTPで送信。Fromは環境変数 SMTP_FROM を使用。
+// 「自分に送る」には返信不可の注記を自動で付与します。
+import nodemailer from 'nodemailer';
 
 const {
   SMTP_HOST,
   SMTP_PORT,
+  SMTP_SECURE,
   SMTP_USER,
   SMTP_PASS,
-  SMTP_FROM
+  SMTP_FROM,
 } = process.env;
 
-let transporter = null;
+function isConfigured() {
+  return !!(SMTP_HOST && SMTP_USER && SMTP_PASS && SMTP_FROM);
+}
 
-if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
-  transporter = nodemailer.createTransport({
+let transport = null;
+function getTransport() {
+  if (transport) return transport;
+  if (!isConfigured()) {
+    console.warn('[mailer] SMTP not configured. Emails will be skipped.');
+    return null;
+  }
+  transport = nodemailer.createTransport({
     host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465, // 465: true, else false
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS
-    }
+    port: Number(SMTP_PORT || 587),
+    secure: String(SMTP_SECURE || 'false').toLowerCase() === 'true', // 465ならtrue
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
   });
-} else {
-  console.warn("[mailer] SMTP not configured. Emails will be skipped.");
+  return transport;
 }
 
+/** ユーザー向け（「自分に送る」） */
 export async function sendUserMail(to, subject, html) {
-  if (!transporter) {
-    console.log(`[mailer] (skip) to=${to}, subject=${subject}`);
-    return { skipped: true };
+  const t = getTransport();
+  if (!t || !to) return;
+  const disclaimer =
+    `<p style="color:#666;font-size:12px;margin-top:16px">` +
+    `※ このメールは送信専用です。<b>返信しても届きません</b>。` +
+    `お問い合わせは公式サイトからお願いいたします。` +
+    `</p>`;
+  const body = `${html}${disclaimer}`;
+
+  try {
+    await t.sendMail({
+      from: SMTP_FROM,          // 例: "Satei App <estimate@irohatec.com>"
+      sender: SMTP_USER,        // エンベロープ送信者（SMTPユーザーに合わせる）
+      to,
+      subject,
+      html: body,
+      // envelope: { from: SMTP_USER, to } // 必要なら明示
+    });
+    console.log('[mailer] user mail sent:', to);
+  } catch (e) {
+    console.warn('[mailer] user mail failed:', e.message);
   }
-  const info = await transporter.sendMail({
-    from: SMTP_FROM || '"Satei App" <no-reply@example.com>',
-    to,
-    subject,
-    html
-  });
-  return { messageId: info.messageId };
 }
 
+/** 社内通知 */
 export async function sendNotifyMail(toCsv, subject, text) {
-  if (!transporter) {
-    console.log(`[mailer] (notify skip) to=${toCsv}, subject=${subject}, text=${text}`);
-    return { skipped: true };
+  const t = getTransport();
+  if (!t || !toCsv) return;
+  const to = String(toCsv)
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  try {
+    await t.sendMail({
+      from: SMTP_FROM,
+      sender: SMTP_USER,
+      to,               // 複数可
+      subject,
+      text,             // プレーンテキストで十分
+    });
+    console.log('[mailer] notify mail sent:', to.join(','));
+  } catch (e) {
+    console.warn('[mailer] notify mail failed:', e.message);
   }
-  const info = await transporter.sendMail({
-    from: SMTP_FROM || '"Satei App" <no-reply@example.com>',
-    to: toCsv,
-    subject,
-    text
-  });
-  return { messageId: info.messageId };
 }

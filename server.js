@@ -26,7 +26,7 @@ const {
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
   origin(origin, callback) {
-    if (!origin) return callback(null, true); // curl等
+    if (!origin) return callback(null, true); // 同一オリジン/CLIなど
     return allowedOrigins.includes(origin)
       ? callback(null, true)
       : callback(new Error('CORS_NOT_ALLOWED'));
@@ -56,6 +56,14 @@ app.use(async (req, res, next) => {
 });
 
 app.get('/health', (_req, res) => res.json({ ok: true, uptime: process.uptime() }));
+
+// ★ 静的配信（/public 以下を配信）→ /demo.html をそのまま開ける
+app.use(express.static('public'));
+
+// ★ /demo で拡張子なしアクセスも可能に
+app.get('/demo', (_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'public', 'demo.html'));
+});
 
 // ── 認証（/estimate で使用）───────────────────────────────
 async function requireAuth(req, res, next) {
@@ -143,7 +151,6 @@ function nearestStationInfo(stations, lat, lng) {
   return { name: best.name || null, minutes: Math.ceil(best.d/80) };
 }
 function computeEstimateV0(input, pack) {
-  // pack が未定義でも落ちないようにデフォルトを用意
   const dataPack = pack || { l01_2025_points:[], l02_2023_points:[], stations:[], deals:[], meta:{} };
 
   const { type='building', area_sqm=60, built_year, lat=null, lng=null } = input || {};
@@ -198,7 +205,7 @@ function computeEstimateV0(input, pack) {
   };
 }
 
-// ── DataPack を確実に用意する（遅延初期化＋起動時初期化の両方） ──
+// ── DataPack を確実に用意（遅延初期化＋起動時初期化） ──
 let dataPack = null;
 let dataPackReady = false;
 async function ensureDataPack() {

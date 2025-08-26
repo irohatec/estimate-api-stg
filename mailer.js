@@ -1,33 +1,43 @@
-// mailer.js — v0 no-op mailer (CommonJS)
-// メールは一切送らず、「成功した風の結果」を返します。
-// 既存の require('./mailer') を変更せずに使えます。
+// mailer.js — v0 no-op mailer (ESM)
+// 送信は一切せず、「成功した風の結果」を返す。
+// server.js の `import { sendUserMail, sendNotifyMail } from './mailer.js'` と一致させる。
 
 /**
- * @param {{to?:string, subject?:string, html?:string, meta?:object}} payload
- * @returns {Promise<{data:{id:string}, error:null}>}
+ * @typedef {Object} MailPayload
+ * @property {string} [to]
+ * @property {string} [subject]
+ * @property {string} [html]
+ * @property {Object} [meta]
  */
-async function sendNotifyMail(payload = {}) {
-  const id = cryptoRandomId();
-  console.log(`[mailer] SKIPPED(v0): { id:'${id}', meta:${safeJson(payload.meta)} }`);
+
+// v0: 通知メール（管理者向けなど）— 実送信なし
+export async function sendNotifyMail(payload = {}) {
+  const id = makeId();
+  console.log(`[mailer] SKIPPED(v0): sendNotifyMail { id:'${id}', meta:${safeJson(payload.meta)} }`);
   return { data: { id }, error: null };
 }
 
-async function enqueueNotifyJob(payload = {}) {
-  return sendNotifyMail(payload);
+// v0: ユーザー向けメール — 実送信なし
+export async function sendUserMail(payload = {}) {
+  const id = makeId();
+  console.log(`[mailer] SKIPPED(v0): sendUserMail { id:'${id}', meta:${safeJson(payload.meta)} }`);
+  return { data: { id }, error: null };
 }
 
-function cryptoRandomId() {
+// 互換のため default でもまとめて出す（使わなくてもOK）
+export default { sendNotifyMail, sendUserMail };
+
+// ---- helpers ----
+function makeId() {
+  try {
+    // Node.js 16+ なら crypto.randomUUID が使える
+    if (typeof crypto?.randomUUID === 'function') return crypto.randomUUID();
+  } catch {}
   const bytes = new Uint8Array(16);
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
+  for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
   return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
 }
 
 function safeJson(v) {
   try { return JSON.stringify(v ?? null); } catch { return "null"; }
 }
-
-module.exports = { sendNotifyMail, enqueueNotifyJob };

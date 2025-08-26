@@ -6,8 +6,6 @@
   --primary:#1e66ff;
   --primary-ink:#fff;
   --border:#e6e9f2;
-  --ok:#14b8a6;
-  --danger:#e11d48;
   --chip:#eef2ff;
 }
 
@@ -50,6 +48,21 @@ body{
 .bottom-card{margin-top:14px}
 .card-title{margin:0 0 12px 0;font-size:18px}
 
+.fieldset{
+  border:1px dashed var(--border);
+  border-radius:12px;
+  padding:12px;
+  margin:12px 0;
+}
+.legend{
+  font-size:13px;
+  color:#334155;
+  margin-bottom:10px;
+}
+.req{color:#e11d48;margin-left:6px}
+.help{font-size:12px;color:var(--muted)}
+.disabled{opacity:.65}
+
 .field-row{
   display:grid;
   grid-template-columns: repeat(3, 1fr);
@@ -76,21 +89,6 @@ body{
 }
 .field input:focus,
 .field select:focus{border-color:#b3c6ff; box-shadow:0 0 0 3px rgba(30,102,255,.15)}
-
-.fieldset{
-  border:1px dashed var(--border);
-  border-radius:12px;
-  padding:12px;
-  margin:12px 0;
-}
-.legend{
-  font-size:13px;
-  color:#334155;
-  margin-bottom:10px;
-}
-.req{color:#e11d48;margin-left:6px}
-.help{font-size:12px;color:var(--muted)}
-.disabled{opacity:.65}
 
 .actions{display:flex;gap:10px;margin-top:8px}
 .btn-primary{

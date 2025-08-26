@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>不動産 簡易査定デモ</title>
   <meta name="color-scheme" content="light" />
+  <!-- 同じフォルダに style.css を置く -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +14,7 @@
       <!-- Header -->
       <div class="header">
         <h1 class="title">不動産 簡易査定</h1>
-        <p class="subtitle">必要な情報を入力すると査定額を自動計算します</p>
+        <p class="subtitle">見やすいUIで入力→査定金額を自動計算（UI検証用）</p>
       </div>
 
       <!-- Grid -->
@@ -24,12 +25,12 @@
 
           <!-- Tabs -->
           <div class="tabs">
-            <div class="tab active" onclick="switchTab('basic')">基本情報</div>
-            <div class="tab" onclick="switchTab('detail')">詳細情報（任意）</div>
+            <button class="tab active" id="tabBtnBasic" type="button">基本情報</button>
+            <button class="tab" id="tabBtnDetail" type="button">詳細情報（任意）</button>
           </div>
 
           <!-- Basic Info -->
-          <div id="tab-basic" class="tab-content">
+          <div id="tab-basic" class="tab-content" style="display:block">
             <div class="row">
               <div class="field">
                 <label>物件種別</label>
@@ -42,22 +43,22 @@
                 </select>
               </div>
               <div class="field">
-                <label>専有面積（㎡）</label>
-                <input type="number" id="area_sqm" placeholder="例：60" />
+                <label>専有面積（㎡）<span class="hint">※必須</span></label>
+                <input type="number" id="area_sqm" placeholder="例：60" inputmode="numeric" />
               </div>
             </div>
 
             <div class="row">
               <div class="field">
-                <label>築年数（建築年）</label>
-                <input type="number" id="built_year" placeholder="例：2008" />
+                <label>建築年（西暦）<span class="hint">※必須</span></label>
+                <input type="number" id="built_year" placeholder="例：2008" inputmode="numeric" />
               </div>
               <div class="field">
-                <label>緯度</label>
+                <label>緯度 <span class="hint">※必須</span></label>
                 <input type="text" id="lat" placeholder="34.3950" />
               </div>
               <div class="field">
-                <label>経度</label>
+                <label>経度 <span class="hint">※必須</span></label>
                 <input type="text" id="lng" placeholder="132.4590" />
               </div>
             </div>
@@ -95,7 +96,7 @@
             <div class="row">
               <div class="field">
                 <label>所在階数（任意）</label>
-                <input type="number" id="floor" placeholder="例：5" />
+                <input type="number" id="floor" placeholder="例：5" inputmode="numeric" />
               </div>
               <div class="field">
                 <label>採光面（任意）</label>
@@ -108,13 +109,16 @@
               </div>
             </div>
 
-            <p class="hint">※ 詳しく入力すると査定の精度が高まります</p>
+            <p class="hint">※ 詳しく入力するほど査定の精度が高まります（任意項目は現段階では送信せず、UIのみ）</p>
           </div>
 
           <!-- Actions -->
           <div class="actions">
-            <button class="btn btn-primary" onclick="sendEstimate()">Send /estimate</button>
-            <button class="btn btn-secondary" onclick="resetForm()">リセット</button>
+            <button class="btn btn-primary" id="btnEstimate" type="button">
+              <span id="btnEstimateLabel">Send /estimate</span>
+              <span id="btnEstimateSpin" class="spinner" style="display:none"></span>
+            </button>
+            <button class="btn btn-secondary" id="btnReset" type="button">リセット</button>
           </div>
         </div>
 
@@ -124,6 +128,15 @@
           <div id="result" class="result">
             <p class="muted">まだ査定は行われていません。</p>
           </div>
+
+          <div class="separator"></div>
+
+          <details class="accordion" id="accRaw">
+            <summary>レスポンス詳細（JSON表示）</summary>
+            <div class="content">
+              <table class="table" id="tableRaw"></table>
+            </div>
+          </details>
         </div>
       </div>
     </div>
@@ -133,45 +146,184 @@
     </div>
   </div>
 
+  <div class="toast" id="toast"></div>
+
   <script>
-    function switchTab(tab) {
-      document.getElementById("tab-basic").style.display = (tab === "basic") ? "block" : "none";
-      document.getElementById("tab-detail").style.display = (tab === "detail") ? "block" : "none";
-      document.querySelectorAll(".tab").forEach(el => el.classList.remove("active"));
-      document.querySelectorAll(".tab")[tab === "basic" ? 0 : 1].classList.add("active");
+    // ====== タブ切替 ======
+    const tabBtnBasic = document.getElementById('tabBtnBasic');
+    const tabBtnDetail = document.getElementById('tabBtnDetail');
+    const tabBasic = document.getElementById('tab-basic');
+    const tabDetail = document.getElementById('tab-detail');
+
+    tabBtnBasic.addEventListener('click', () => {
+      tabBasic.style.display = 'block';
+      tabDetail.style.display = 'none';
+      tabBtnBasic.classList.add('active');
+      tabBtnDetail.classList.remove('active');
+    });
+    tabBtnDetail.addEventListener('click', () => {
+      tabBasic.style.display = 'none';
+      tabDetail.style.display = 'block';
+      tabBtnBasic.classList.remove('active');
+      tabBtnDetail.classList.add('active');
+    });
+
+    // ====== 入力の保存/復元（localStorage） ======
+    const fields = [
+      'type','area_sqm','built_year','lat','lng','send_to',
+      'station','address','madori','structure','floor','aspect'
+    ];
+
+    function saveForm() {
+      const data = {};
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        data[id] = (el.type === 'checkbox') ? el.checked : el.value;
+      });
+      localStorage.setItem('estimate_form', JSON.stringify(data));
     }
 
-    async function sendEstimate() {
-      const payload = {
-        area_sqm: parseFloat(document.getElementById("area_sqm").value || 0),
-        built_year: parseInt(document.getElementById("built_year").value || 0),
-        lat: parseFloat(document.getElementById("lat").value || 0),
-        lng: parseFloat(document.getElementById("lng").value || 0),
-        send_to: document.getElementById("send_to").checked ? "ON" : "OFF"
-      };
+    function loadForm() {
       try {
-        const res = await fetch("https://estimate-api-stg.onrender.com/estimate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+        const raw = localStorage.getItem('estimate_form');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        fields.forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (el.type === 'checkbox') el.checked = !!data[id];
+          else if (data[id] != null) el.value = data[id];
         });
-        const data = await res.json();
-        document.getElementById("result").innerHTML =
-          `<div class="price">¥${data.price.toLocaleString()}</div>
-           <div class="badge">推定価格</div>`;
-      } catch (e) {
-        document.getElementById("result").innerHTML =
-          `<div class="alert error">エラーが発生しました: ${e.message}</div>`;
-      }
+      } catch {}
     }
 
     function resetForm() {
-      document.querySelectorAll("input, select").forEach(el => {
-        if (el.type === "checkbox") el.checked = false;
-        else el.value = "";
+      fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = false;
+        else el.value = '';
       });
-      document.getElementById("result").innerHTML = `<p class="muted">まだ査定は行われていません。</p>`;
+      renderInitialResult();
+      localStorage.removeItem('estimate_form');
+      showToast('入力をリセットしました');
     }
+
+    // 変更で自動保存
+    document.addEventListener('input', (e) => {
+      if (fields.includes(e.target.id)) saveForm();
+    });
+
+    // ====== /estimate 呼び出し ======
+    const btnEstimate = document.getElementById('btnEstimate');
+    const btnEstimateLabel = document.getElementById('btnEstimateLabel');
+    const btnEstimateSpin = document.getElementById('btnEstimateSpin');
+
+    btnEstimate.addEventListener('click', sendEstimate);
+    document.getElementById('btnReset').addEventListener('click', resetForm);
+
+    async function sendEstimate() {
+      // 必須の簡易バリデーション
+      const area = parseFloat(document.getElementById('area_sqm').value || '');
+      const year = parseInt(document.getElementById('built_year').value || '', 10);
+      const lat  = parseFloat(document.getElementById('lat').value || '');
+      const lng  = parseFloat(document.getElementById('lng').value || '');
+      const sendTo = document.getElementById('send_to').checked ? 'ON' : 'OFF';
+
+      if (!isFinite(area) || area <= 0) return showToast('専有面積（㎡）を入力してください');
+      if (!Number.isInteger(year) || year < 1900) return showToast('建築年（西暦）を入力してください');
+      if (!isFinite(lat) || !isFinite(lng)) return showToast('緯度・経度を入力してください');
+
+      const payload = { area_sqm: area, built_year: year, lat, lng, send_to: sendTo };
+
+      btnEstimate.disabled = true;
+      btnEstimateLabel.textContent = '送信中…';
+      btnEstimateSpin.style.display = 'inline-block';
+
+      try {
+        const res = await fetch('https://estimate-api-stg.onrender.com/estimate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const t = await res.text().catch(()=>'');
+          throw new Error(`HTTP ${res.status}: ${t || 'エラー'}`);
+        }
+
+        const data = await res.json();
+        renderResult(data);
+        renderRawTable(data);
+      } catch (e) {
+        renderError(e);
+      } finally {
+        btnEstimate.disabled = false;
+        btnEstimateLabel.textContent = 'Send /estimate';
+        btnEstimateSpin.style.display = 'none';
+      }
+    }
+
+    // ====== 表示系 ======
+    const resultEl = document.getElementById('result');
+    const tableRaw = document.getElementById('tableRaw');
+
+    function renderInitialResult() {
+      resultEl.innerHTML = `<p class="muted">まだ査定は行われていません。</p>`;
+      tableRaw.innerHTML = '';
+    }
+
+    function renderResult(data) {
+      const price = (data?.price != null) ? Number(data.price) : null;
+      const low   = (data?.range_low != null) ? Number(data.range_low) : null;
+      const high  = (data?.range_high != null) ? Number(data.range_high) : null;
+
+      const priceHtml = price != null ? `¥${price.toLocaleString()}` : '—';
+      const rangeHtml = (low != null && high != null) ? `¥${low.toLocaleString()} 〜 ¥${high.toLocaleString()}` : '—';
+
+      resultEl.innerHTML = `
+        <div class="price">${priceHtml}</div>
+        <div class="badge">推定価格</div>
+        <div class="small muted">想定レンジ：${rangeHtml}</div>
+      `;
+    }
+
+    function renderRawTable(data) {
+      if (!data || typeof data !== 'object') {
+        tableRaw.innerHTML = '<tr><td>データなし</td></tr>';
+        return;
+      }
+      const rows = [];
+      const keys = Object.keys(data);
+      keys.forEach(k => {
+        let v = data[k];
+        if (v && typeof v === 'object') v = JSON.stringify(v, null, 2);
+        rows.push(`<tr><th>${escapeHtml(k)}</th><td><pre style="margin:0;white-space:pre-wrap;">${escapeHtml(String(v))}</pre></td></tr>`);
+      });
+      tableRaw.innerHTML = rows.join('');
+    }
+
+    function renderError(err) {
+      resultEl.innerHTML = `<div class="alert error">エラーが発生しました：${escapeHtml(err.message || String(err))}</div>`;
+      tableRaw.innerHTML = '';
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // 初期化
+    loadForm();
+    renderInitialResult();
   </script>
 </body>
 </html>

@@ -1,236 +1,177 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Satei App Demo (v0)</title>
-  <style>
-    :root { --bg:#0b1220; --card:#111a2c; --text:#e6eefc; --muted:#9bb3d3; --accent:#4ea1ff; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; background:var(--bg); color:var(--text); }
-    header { padding:16px 20px; border-bottom:1px solid #1e2a42; position:sticky; top:0; background:rgba(11,18,32,0.75); backdrop-filter: blur(8px); }
-    h1 { margin:0; font-size:18px; letter-spacing: .3px; }
-    main { padding: 20px; max-width: 960px; margin: 0 auto; display: grid; gap: 16px; }
-    .card { background: var(--card); border:1px solid #1e2a42; border-radius: 14px; padding:16px; }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-    input, select, button, textarea {
-      width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a395a;
-      background:#0b1425; color:var(--text); font-size:14px; outline:none;
-    }
-    input::placeholder { color:#6d85ad; }
-    button { cursor:pointer; background:linear-gradient(180deg, #2c65ff, #1b47c9); border:none; }
-    button:disabled { opacity:.5; cursor:not-allowed; }
-    .muted { color: var(--muted); font-size:12px; }
-    .ok { color:#7ee787; }
-    pre { margin:0; white-space: pre-wrap; word-break: break-word; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-    .divider { height:1px; background:#1e2a42; margin: 8px 0; }
-    .hl { color: var(--accent); }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>不動産 簡易査定デモ</title>
+  <meta name="color-scheme" content="light" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header><h1>Satei App / 内部テスト用デモ (v0)</h1></header>
-  <main>
-    <section class="card">
-      <h3>1) サインイン（Firebase Auth / Email & Password）</h3>
-      <div class="row">
-        <div>
-          <label>メール</label>
-          <input id="email" type="email" placeholder="test@example.com" />
-        </div>
-        <div>
-          <label>パスワード</label>
-          <input id="pw" type="password" placeholder="********" />
-        </div>
+  <div class="container">
+    <div class="app">
+      <!-- Header -->
+      <div class="header">
+        <h1 class="title">不動産 簡易査定</h1>
+        <p class="subtitle">必要な情報を入力すると査定額を自動計算します</p>
       </div>
-      <div class="row">
-        <div><button id="btnSignIn">サインイン</button></div>
-        <div><button id="btnSignOut" disabled>サインアウト</button></div>
-      </div>
-      <div class="divider"></div>
-      <div class="muted">状態: <span id="state" class="mono">未サインイン</span></div>
-    </section>
 
-    <section class="card">
-      <h3>2) パラメータ入力 → /estimate を実行（要サインイン）</h3>
-      <div class="row">
-        <div>
-          <label>種別</label>
-          <select id="type">
-            <option value="building" selected>building（建物）</option>
-            <option value="land">land（土地）</option>
-          </select>
-        </div>
-        <div>
-          <label>面積（㎡）</label>
-          <input id="area" type="number" value="70" min="1" step="1" />
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>築年（西暦、土地は空でOK）</label>
-          <input id="built" type="number" value="2008" min="1900" max="2100" />
-        </div>
-        <div>
-          <label>駅徒歩（分）※空なら自動推定</label>
-          <input id="walk" type="number" placeholder="（任意）" min="0" />
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>緯度 lat（例：34.3950）</label>
-          <input id="lat" type="number" value="34.3950" step="0.0001" />
-        </div>
-        <div>
-          <label>経度 lng（例：132.4590）</label>
-          <input id="lng" type="number" value="132.4590" step="0.0001" />
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>「自分に送る」メール（任意）</label>
-          <input id="to" type="email" placeholder="test@example.com" />
-        </div>
-        <div>
-          <label>送信フラグ</label>
-          <select id="send">
-            <option value="false" selected>送信しない</option>
-            <option value="true">送信する</option>
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <div><button id="btnEstimate" disabled>/estimate を実行</button></div>
-        <div><button id="btnGeo">端末の現在地を使う</button></div>
-      </div>
-      <div class="divider"></div>
-      <div class="muted">結果</div>
-      <pre id="out" class="mono"></pre>
-    </section>
+      <!-- Grid -->
+      <div class="grid">
+        <!-- Left Column: Form -->
+        <div class="card">
+          <h2>査定フォーム</h2>
 
-    <section class="card">
-      <h3>メモ</h3>
-      <ul class="muted">
-        <li>v0のロジック：L01/L02のIDW→県中央値の時点補正→事例（n≤10）段階ブレンド→徒歩/築年→レンジ±10〜20%（nで自動）</li>
-        <li>deals が空の場合は <span class="hl">n=0 → ベース100%</span>、レンジは±20%</li>
-        <li>このページはAPIと同じドメインから配信されます（CORSの影響なし）</li>
-      </ul>
-    </section>
-  </main>
+          <!-- Tabs -->
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab('basic')">基本情報</div>
+            <div class="tab" onclick="switchTab('detail')">詳細情報（任意）</div>
+          </div>
+
+          <!-- Basic Info -->
+          <div id="tab-basic" class="tab-content">
+            <div class="row">
+              <div class="field">
+                <label>物件種別</label>
+                <select id="type">
+                  <option>土地</option>
+                  <option>住宅</option>
+                  <option>マンション</option>
+                  <option>ビル</option>
+                  <option>アパート</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>専有面積（㎡）</label>
+                <input type="number" id="area_sqm" placeholder="例：60" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label>築年数（建築年）</label>
+                <input type="number" id="built_year" placeholder="例：2008" />
+              </div>
+              <div class="field">
+                <label>緯度</label>
+                <input type="text" id="lat" placeholder="34.3950" />
+              </div>
+              <div class="field">
+                <label>経度</label>
+                <input type="text" id="lng" placeholder="132.4590" />
+              </div>
+            </div>
+
+            <div class="switch">
+              <input type="checkbox" id="send_to" />
+              <label for="send_to">メール送信する（OFFにすると画面表示のみ）</label>
+            </div>
+          </div>
+
+          <!-- Detail Info -->
+          <div id="tab-detail" class="tab-content" style="display:none">
+            <div class="row">
+              <div class="field">
+                <label>最寄り電停（任意） <span class="tag">任意</span></label>
+                <input type="text" id="station" placeholder="例：紙屋町東" />
+              </div>
+              <div class="field">
+                <label>住所（任意） <span class="tag">任意</span></label>
+                <input type="text" id="address" placeholder="例：広島市中区大手町…" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label>間取り（任意）</label>
+                <input type="text" id="madori" placeholder="例：3LDK" />
+              </div>
+              <div class="field">
+                <label>構造（任意）</label>
+                <input type="text" id="structure" placeholder="例：RC造" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label>所在階数（任意）</label>
+                <input type="number" id="floor" placeholder="例：5" />
+              </div>
+              <div class="field">
+                <label>採光面（任意）</label>
+                <select id="aspect">
+                  <option>南</option>
+                  <option>東</option>
+                  <option>西</option>
+                  <option>北</option>
+                </select>
+              </div>
+            </div>
+
+            <p class="hint">※ 詳しく入力すると査定の精度が高まります</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="actions">
+            <button class="btn btn-primary" onclick="sendEstimate()">Send /estimate</button>
+            <button class="btn btn-secondary" onclick="resetForm()">リセット</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Result -->
+        <div class="card">
+          <h2>査定結果</h2>
+          <div id="result" class="result">
+            <p class="muted">まだ査定は行われていません。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>© 2025 査定アプリ Demo</p>
+    </div>
+  </div>
 
   <script>
-    // === 設定（STG） ==================================================
-    const FIREBASE_API_KEY = "AIzaSyDOf-SP7s-Rgenm4giy-aCraV0BzYtv2Fo"; // 公開前提のWebキー（Auth RESTで使用）
-    const SIGNIN_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`;
-    // ==================================================================
+    function switchTab(tab) {
+      document.getElementById("tab-basic").style.display = (tab === "basic") ? "block" : "none";
+      document.getElementById("tab-detail").style.display = (tab === "detail") ? "block" : "none";
+      document.querySelectorAll(".tab").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".tab")[tab === "basic" ? 0 : 1].classList.add("active");
+    }
 
-    let idToken = null;
-
-    const $ = (id)=>document.getElementById(id);
-    const setState = (msg, ok=false)=>{
-      $("state").textContent = msg;
-      $("state").className = "mono" + (ok ? " ok" : "");
-    };
-
-    async function signIn() {
-      const email = $("email").value.trim();
-      const password = $("pw").value;
-      if (!email || !password) { alert("メールとパスワードを入れてください"); return; }
-
-      $("btnSignIn").disabled = true;
-      setState("サインイン中…");
-
+    async function sendEstimate() {
+      const payload = {
+        area_sqm: parseFloat(document.getElementById("area_sqm").value || 0),
+        built_year: parseInt(document.getElementById("built_year").value || 0),
+        lat: parseFloat(document.getElementById("lat").value || 0),
+        lng: parseFloat(document.getElementById("lng").value || 0),
+        send_to: document.getElementById("send_to").checked ? "ON" : "OFF"
+      };
       try {
-        const res = await fetch(SIGNIN_URL, {
+        const res = await fetch("https://estimate-api-stg.onrender.com/estimate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, returnSecureToken: true })
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          throw new Error(json.error?.message || "SIGNIN_FAILED");
-        }
-        idToken = json.idToken;
-        setState("サインイン済み（トークン取得OK）", true);
-        $("btnEstimate").disabled = false;
-        $("btnSignOut").disabled = false;
-      } catch (e) {
-        console.error(e);
-        setState("サインイン失敗: " + e.message);
-        $("btnEstimate").disabled = true;
-        $("btnSignOut").disabled = true;
-      } finally {
-        $("btnSignIn").disabled = false;
-      }
-    }
-
-    function signOut() {
-      idToken = null;
-      setState("未サインイン");
-      $("btnEstimate").disabled = true;
-      $("btnSignOut").disabled = true;
-    }
-
-    function getPayload() {
-      const type = $("type").value;
-      const area_sqm = Number($("area").value || 0);
-      const built_year_raw = $("built").value.trim();
-      const built_year = built_year_raw ? Number(built_year_raw) : undefined;
-      const lat = Number($("lat").value || 0);
-      const lng = Number($("lng").value || 0);
-      const email = $("to").value.trim();
-      const send_to = $("send").value === "true";
-      const walk_raw = $("walk").value.trim();
-      const walk_minutes = walk_raw ? Number(walk_raw) : undefined;
-
-      return { type, area_sqm, built_year, lat, lng, email, send_to, walk_minutes };
-    }
-
-    async function runEstimate() {
-      if (!idToken) { alert("先にサインインしてください"); return; }
-      const payload = getPayload();
-      $("btnEstimate").disabled = true;
-      $("out").textContent = "送信中…";
-
-      try {
-        const res = await fetch("/estimate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + idToken
-          },
           body: JSON.stringify(payload)
         });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "INTERNAL_ERROR");
-
-        $("out").textContent = JSON.stringify(json, null, 2);
+        const data = await res.json();
+        document.getElementById("result").innerHTML =
+          `<div class="price">¥${data.price.toLocaleString()}</div>
+           <div class="badge">推定価格</div>`;
       } catch (e) {
-        $("out").textContent = "エラー: " + e.message;
-        console.error(e);
-      } finally {
-        $("btnEstimate").disabled = false;
+        document.getElementById("result").innerHTML =
+          `<div class="alert error">エラーが発生しました: ${e.message}</div>`;
       }
     }
 
-    function useGeolocation() {
-      if (!navigator.geolocation) { alert("この端末は位置取得に未対応です"); return; }
-      navigator.geolocation.getCurrentPosition(
-        (pos)=>{
-          $("lat").value = pos.coords.latitude.toFixed(6);
-          $("lng").value = pos.coords.longitude.toFixed(6);
-        },
-        (err)=>{ alert("位置取得に失敗: " + err.message); }
-      );
+    function resetForm() {
+      document.querySelectorAll("input, select").forEach(el => {
+        if (el.type === "checkbox") el.checked = false;
+        else el.value = "";
+      });
+      document.getElementById("result").innerHTML = `<p class="muted">まだ査定は行われていません。</p>`;
     }
-
-    document.addEventListener("DOMContentLoaded", ()=>{
-      $("btnSignIn").addEventListener("click", signIn);
-      $("btnSignOut").addEventListener("click", signOut);
-      $("btnEstimate").addEventListener("click", runEstimate);
-      $("btnGeo").addEventListener("click", useGeolocation);
-    });
   </script>
 </body>
 </html>

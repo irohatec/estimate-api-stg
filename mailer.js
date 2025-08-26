@@ -1,91 +1,47 @@
-// mailer.js — Resend対応版（ESM）
-// server.js が期待する `sendNotifyMail` / `sendUserMail` をエクスポートします
-import { Resend } from "resend";
+// mailer.js  — v0 no-op mailer (Resend未認証/送信停止モード)
+// 目的: v0ではメールを一切送らない。ただし呼び出し元は壊さない。
 
-console.log("[mailer] Resend mailer loaded");
+/**
+ * @typedef {Object} NotifyPayload
+ * @property {string} to         - 送信先メール（使わない）
+ * @property {string} subject    - 件名（使わない）
+ * @property {string} html       - HTML本文（使わない）
+ * @property {Object} [meta]     - 任意メタ（ログ用）
+ */
 
-// 環境変数
-const API_KEY = process.env.RESEND_API_KEY;
-const FROM = process.env.SMTP_FROM || "onboarding@resend.dev"; // 独自ドメイン未認証でも送信可
-const DEFAULT_TO = (process.env.NOTIFY_TO || "")
-  .split(",")
-  .map(s => s.trim())
-  .filter(Boolean);
-
-// サンドボックス（安全確認用）。true の間は宛先を強制的に delivered@resend.dev にする
-const USE_SANDBOX = String(process.env.RESEND_SANDBOX || "").toLowerCase() === "true";
-const SANDBOX_TO = ["delivered@resend.dev"];
-
-const resend = API_KEY ? new Resend(API_KEY) : null;
-
-function buildText(payload) {
-  if (typeof payload === "string") return payload;
-  return [
-    "【査定通知】",
-    `name: ${payload?.name ?? ""}`,
-    `email: ${payload?.email ?? ""}`,
-    `note: ${payload?.note ?? ""}`,
-    payload ? `\nraw:\n${JSON.stringify(payload, null, 2)}` : ""
-  ].join("\n");
+/**
+ * 送信せずに即時 resolve。ログは「SKIPPED(v0)」を1行だけ。
+ * 呼び出し元の期待値に合わせて { data: { id }, error: null } を返す。
+ * @param {NotifyPayload} payload
+ * @returns {Promise<{data:{id:string}, error:null}>}
+ */
+export async function sendNotifyMail(payload) {
+  const id = cryptoRandomId();
+  console.log(`[mailer] sendNotifyMail SKIPPED(v0): { id: '${id}', meta: ${safeJson(payload?.meta)} }`);
+  // 実送信なし
+  return { data: { id }, error: null };
 }
 
 /**
- * 管理者・社内向け通知
- * server.js 側は sendNotifyMail(payload, { subject?, to? }) を想定
+ * v0ではバッチやキューも未使用。互換のためダミーを残す。
  */
-export async function sendNotifyMail(payload, opts = {}) {
-  if (!resend) {
-    console.warn("[mailer] RESEND_API_KEY 未設定。sendNotifyMail をスキップ");
-    return { skipped: true };
-  }
-  const to = USE_SANDBOX
-    ? SANDBOX_TO
-    : (opts.to && opts.to.length ? opts.to : DEFAULT_TO);
-
-  if (!to || to.length === 0) {
-    console.warn("[mailer] 宛先未設定（NOTIFY_TO か opts.to を設定してください）");
-    return { skipped: true };
-  }
-
-  const subject = opts.subject || "【査定リード】受信";
-  const text = buildText(payload);
-
-  try {
-    const resp = await resend.emails.send({ from: FROM, to, subject, text });
-    console.log("[mailer] sendNotifyMail queued:", resp?.id || resp);
-    return { ok: true, id: resp?.id || null };
-  } catch (err) {
-    console.error("[mailer] sendNotifyMail error:", err);
-    throw err;
-  }
+export async function enqueueNotifyJob(payload) {
+  return sendNotifyMail(payload);
 }
 
-/**
- * ユーザー（依頼者）向け送信
- * server.js 側は sendUserMail(payload, email, subject?) を想定
- */
-export async function sendUserMail(payload, email, subject = "査定結果のお知らせ") {
-  if (!resend) {
-    console.warn("[mailer] RESEND_API_KEY 未設定。sendUserMail をスキップ");
-    return { skipped: true };
+/** ライブラリに依存しない簡易ID */
+function cryptoRandomId() {
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
   }
-  const to = USE_SANDBOX
-    ? SANDBOX_TO
-    : (Array.isArray(email) ? email : [email]).filter(Boolean);
-
-  if (!to || to.length === 0) {
-    console.warn("[mailer] ユーザー宛先が空です");
-    return { skipped: true };
-  }
-
-  const text = buildText(payload);
-
-  try {
-    const resp = await resend.emails.send({ from: FROM, to, subject, text });
-    console.log("[mailer] sendUserMail queued:", resp?.id || resp);
-    return { ok: true, id: resp?.id || null };
-  } catch (err) {
-    console.error("[mailer] sendUserMail error:", err);
-    throw err;
-  }
+  return [...bytes].map(b => b.toString(16).padStart(2, "0")).join("");
 }
+
+function safeJson(v) {
+  try { return JSON.stringify(v ?? null); } catch { return 'null'; }
+}
+
+export default { sendNotifyMail, enqueueNotifyJob };

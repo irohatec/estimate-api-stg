@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>不動産 簡易査定デモ</title>
   <meta name="color-scheme" content="light" />
-  <!-- 同じフォルダに style.css を置く -->
-  <link rel="stylesheet" href="style.css">
+  <!-- 絶対パスで読み込み（キャッシュバスター付き） -->
+  <link rel="stylesheet" href="/style.css?v=1">
 </head>
 <body>
   <div class="container">
@@ -210,7 +210,6 @@
       showToast('入力をリセットしました');
     }
 
-    // 変更で自動保存
     document.addEventListener('input', (e) => {
       if (fields.includes(e.target.id)) saveForm();
     });
@@ -224,7 +223,6 @@
     document.getElementById('btnReset').addEventListener('click', resetForm);
 
     async function sendEstimate() {
-      // 必須の簡易バリデーション
       const area = parseFloat(document.getElementById('area_sqm').value || '');
       const year = parseInt(document.getElementById('built_year').value || '', 10);
       const lat  = parseFloat(document.getElementById('lat').value || '');

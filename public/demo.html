@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>不動産 簡易査定（UI検証用）</title>
-  <!-- 絶対パスのまま -->
   <link rel="stylesheet" href="/style.css?v=1">
 </head>
 <body>
@@ -19,30 +18,34 @@
       <section class="card">
         <h2 class="card-title">査定フォーム</h2>
 
-        <!-- 物件基本 -->
-        <div class="field-row">
-          <div class="field">
-            <label for="propertyType">物件種別 <span class="req">※必須</span></label>
-            <select id="propertyType">
-              <option value="land">土地</option>
-              <option value="house">戸建</option>
-              <option value="apartment">マンション</option>
-            </select>
-          </div>
+        <!-- 基本情報 -->
+        <div class="fieldset">
+          <div class="legend">基本情報</div>
 
-          <div class="field">
-            <label for="area">専有面積（㎡） <span class="req">※必須</span></label>
-            <input id="area" type="number" min="0" step="0.01" placeholder="例：100.56">
-          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="propertyType">物件種別 <span class="req">※必須</span></label>
+              <select id="propertyType">
+                <option value="land">土地</option>
+                <option value="house">戸建</option>
+                <option value="apartment">マンション</option>
+              </select>
+            </div>
 
-          <div class="field" id="yearBuiltField">
-            <label for="yearBuilt">築年（西暦） <span class="req" id="yearBuiltReq">※必須</span></label>
-            <input id="yearBuilt" type="number" inputmode="numeric" placeholder="例：2005">
-            <div class="help" id="yearHelp">土地は不要です（建物のみ必須）</div>
+            <div class="field">
+              <label for="area">専有面積（㎡） <span class="req">※必須</span></label>
+              <input id="area" type="number" min="0" step="0.01" placeholder="例：100.56">
+            </div>
+
+            <div class="field" id="yearBuiltField">
+              <label for="yearBuilt">築年（西暦） <span class="req" id="yearBuiltReq">※必須</span></label>
+              <input id="yearBuilt" type="number" inputmode="numeric" placeholder="例：2005">
+              <div class="help">※ 土地は不要（建物のみ必須）</div>
+            </div>
           </div>
         </div>
 
-        <!-- 所在地（住所は必須／番地は任意だが「任意」表記なし） -->
+        <!-- 所在地（住所は必須／番地は任意：ラベルに「任意」表記は出さない） -->
         <div class="fieldset">
           <div class="legend">所在地 <span class="req">※必須</span></div>
 
@@ -70,7 +73,67 @@
           </div>
         </div>
 
-        <!-- 最寄り駅（任意：コード送信） -->
+        <!-- 詳細情報（任意） -->
+        <div class="fieldset">
+          <div class="legend">詳細情報（任意）</div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="layout">間取</label>
+              <select id="layout">
+                <option value="">（選択なし）</option>
+                <option>1R</option><option>1K</option><option>1DK</option><option>1LDK</option>
+                <option>2K</option><option>2DK</option><option>2LDK</option>
+                <option>3DK</option><option>3LDK</option>
+                <option>4LDK</option><option>5LDK+</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="orientation">採光面</label>
+              <select id="orientation">
+                <option value="">（選択なし）</option>
+                <option>北</option><option>北東</option><option>東</option><option>南東</option>
+                <option>南</option><option>南西</option><option>西</option><option>北西</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="structure">構造</label>
+              <select id="structure">
+                <option value="">（選択なし）</option>
+                <option>木造</option><option>軽量鉄骨</option><option>鉄骨造</option>
+                <option>RC造</option><option>SRC造</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="floor">所在階数</label>
+              <select id="floor">
+                <option value="">（選択なし）</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="buildingFloors">建物階数</label>
+              <select id="buildingFloors">
+                <option value="">（選択なし）</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="ageKnown">築年不明</label>
+              <select id="ageKnown">
+                <option value="yes" selected>いいえ（分かる）</option>
+                <option value="no">はい（分からない）</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 最寄り駅（任意） -->
         <div class="fieldset">
           <div class="legend">最寄り駅（任意）</div>
 
@@ -133,51 +196,27 @@
 
   <script>
     // =========================
-    // 静的データ（MVP：広島市のみ）
+    // 静的データ（A: 広島市全域／必要に応じて拡張）
     // =========================
     const ADDRESS_DATA = {
       "prefectures": [
         {
           "name": "広島県",
           "cities": [
-            {
-              "name": "広島市南区",
-              "towns": ["宇品東一丁目","宇品西一丁目","段原南一丁目","比治山本町","皆実町一丁目"]
-            },
-            {
-              "name": "広島市中区",
-              "towns": ["大手町一丁目","袋町","紙屋町一丁目","上八丁堀","基町"]
-            },
-            {
-              "name": "広島市東区",
-              "towns": ["光町一丁目","若草町","牛田本町一丁目","曙一丁目"]
-            },
-            {
-              "name": "広島市西区",
-              "towns": ["横川町一丁目","草津新町一丁目","庚午北一丁目"]
-            },
-            {
-              "name": "広島市安佐南区",
-              "towns": ["大町東一丁目","中筋一丁目","西原一丁目"]
-            },
-            {
-              "name": "広島市安佐北区",
-              "towns": ["可部一丁目","口田南一丁目"]
-            },
-            {
-              "name": "広島市佐伯区",
-              "towns": ["五日市一丁目","楽々園一丁目"]
-            },
-            {
-              "name": "広島市安芸区",
-              "towns": ["船越南一丁目","矢野東一丁目"]
-            }
+            {"name": "広島市中区","towns": ["大手町一丁目","大手町二丁目","紙屋町一丁目","紙屋町二丁目","本通","袋町","基町","上八丁堀","八丁堀","国泰寺町一丁目"]},
+            {"name": "広島市東区","towns": ["若草町","光町一丁目","光町二丁目","牛田本町一丁目","牛田中一丁目","矢賀新町一丁目","曙一丁目","曙二丁目","温品一丁目","戸坂千足一丁目"]},
+            {"name": "広島市南区","towns": ["宇品東一丁目","宇品東二丁目","宇品西一丁目","宇品西二丁目","皆実町一丁目","皆実町二丁目","段原南一丁目","段原日出一丁目","比治山本町","仁保一丁目"]},
+            {"name": "広島市西区","towns": ["横川町一丁目","横川町二丁目","横川新町","草津新町一丁目","庚午北一丁目","観音新町一丁目","己斐本町一丁目","南観音一丁目","三篠町一丁目","福島町一丁目"]},
+            {"name": "広島市安佐南区","towns": ["中筋一丁目","東原一丁目","西原一丁目","祇園一丁目","大町東一丁目","緑井一丁目","山本一丁目","長束一丁目","伴東一丁目","八木一丁目"]},
+            {"name": "広島市安佐北区","towns": ["可部一丁目","可部東一丁目","口田南一丁目","落合一丁目","高陽町高陽台","亀山一丁目","可部南一丁目","口田一丁目","亀山南一丁目","大林一丁目"]},
+            {"name": "広島市佐伯区","towns": ["五日市一丁目","五日市中央一丁目","楽々園一丁目","海老園一丁目","八幡一丁目","美鈴が丘東一丁目","石内東一丁目","皆賀一丁目","城山一丁目","藤の木一丁目"]},
+            {"name": "広島市安芸区","towns": ["船越南一丁目","船越南二丁目","矢野東一丁目","矢野西一丁目","中野一丁目","中野東一丁目","瀬野一丁目","瀬野西一丁目","畑賀一丁目","阿戸町"]}
           ]
         }
       ]
     };
 
-    // 路線→駅（コードは自前スキーマ／例）
+    // 路線→駅（自前 station_code）
     const STATION_DATA = {
       "lines": [
         {
@@ -185,25 +224,58 @@
           "name": "広島電鉄 本線",
           "stations": [
             {"code":"HRJ-AL-00001","name":"広島駅"},
+            {"code":"HRJ-AL-00005","name":"稲荷町"},
+            {"code":"HRJ-AL-00010","name":"銀山町"},
+            {"code":"HRJ-AL-00012","name":"胡町"},
             {"code":"HRJ-AL-00015","name":"紙屋町東"},
             {"code":"HRJ-AL-00016","name":"紙屋町西"},
-            {"code":"HRJ-AL-00020","name":"本通"}
+            {"code":"HRJ-AL-00020","name":"本通"},
+            {"code":"HRJ-AL-00025","name":"原爆ドーム前"},
+            {"code":"HRJ-AL-00030","name":"十日市町"},
+            {"code":"HRJ-AL-00040","name":"広電西広島"}
           ]
         },
         {
           "code": "HRJ-TRAM-UJINA",
           "name": "広島電鉄 宇品線",
           "stations": [
+            {"code":"HRJ-UJ-00005","name":"比治山橋"},
             {"code":"HRJ-UJ-00010","name":"県病院前"},
             {"code":"HRJ-UJ-00014","name":"皆実町六丁目"},
-            {"code":"HRJ-UJ-00020","name":"宇品二丁目"}
+            {"code":"HRJ-UJ-00018","name":"広大附属学校前"},
+            {"code":"HRJ-UJ-00020","name":"宇品二丁目"},
+            {"code":"HRJ-UJ-00024","name":"海岸通"}
+          ]
+        },
+        {
+          "code": "HRJ-TRAM-YOKOGAWA",
+          "name": "広島電鉄 横川線",
+          "stations": [
+            {"code":"HRJ-YK-00005","name":"横川一丁目"},
+            {"code":"HRJ-YK-00010","name":"横川駅"},
+            {"code":"HRJ-YK-00015","name":"別院前"},
+            {"code":"HRJ-YK-00020","name":"寺町"},
+            {"code":"HRJ-YK-00025","name":"十日市町"}
+          ]
+        },
+        {
+          "code": "JR-SANYO",
+          "name": "JR 山陽本線（広島周辺）",
+          "stations": [
+            {"code":"JR-SY-0340","name":"海田市"},
+            {"code":"JR-SY-0345","name":"向洋"},
+            {"code":"JR-SY-0350","name":"天神川"},
+            {"code":"JR-SY-0355","name":"広島"},
+            {"code":"JR-SY-0360","name":"新白島"},
+            {"code":"JR-SY-0365","name":"横川"},
+            {"code":"JR-SY-0370","name":"西広島"}
           ]
         }
       ]
     };
 
     // =========================
-    // 初期化
+    // DOM ショートカット
     // =========================
     const $ = (s) => document.querySelector(s);
     const sendBtn = $('#sendBtn');
@@ -222,16 +294,26 @@
     const townSel = $('#town');
     const blockLot = $('#blockLot');
 
+    const layoutSel = $('#layout');
+    const orientationSel = $('#orientation');
+    const structureSel = $('#structure');
+    const floorSel = $('#floor');
+    const buildingFloorsSel = $('#buildingFloors');
+    const ageKnownSel = $('#ageKnown');
+
     const lineSel = $('#line');
     const stationSel = $('#station');
 
     const email = $('#email');
     const sendMail = $('#sendMail');
 
+    // =========================
+    // 初期化
+    // =========================
     function populateAddress() {
       // 都道府県
       prefSel.innerHTML = '';
-      ADDRESS_DATA.prefectures.forEach((p, idx) => {
+      ADDRESS_DATA.prefectures.forEach((p) => {
         const opt = document.createElement('option');
         opt.value = p.name;
         opt.textContent = p.name;
@@ -247,7 +329,6 @@
         opt.textContent = c.name;
         citySel.appendChild(opt);
       });
-      // デフォルト：広島市南区
       citySel.value = '広島市南区';
 
       // 町・丁目
@@ -296,9 +377,24 @@
       stationSel.disabled = false;
     }
 
+    function populateFloors() {
+      floorSel.innerHTML = '<option value="">（選択なし）</option>';
+      buildingFloorsSel.innerHTML = '<option value="">（選択なし）</option>';
+      for (let i=1; i<=50; i++) {
+        const f1 = document.createElement('option');
+        f1.value = String(i); f1.textContent = `${i}`;
+        floorSel.appendChild(f1);
+
+        const f2 = document.createElement('option');
+        f2.value = String(i); f2.textContent = `${i}`;
+        buildingFloorsSel.appendChild(f2);
+      }
+    }
+
     function toggleYearBuiltRequirement() {
       const type = propertyType.value;
-      if (type === 'land') {
+      const ageUnknown = ageKnownSel.value === 'no';
+      if (type === 'land' || ageUnknown) {
         yearBuilt.required = false;
         yearBuilt.value = '';
         yearBuilt.disabled = true;
@@ -313,10 +409,8 @@
     }
 
     prefSel.addEventListener('change', () => {
-      // 今回は1都道府県のみだが将来拡張用
       const prevCity = citySel.value;
       populateAddress();
-      // 直前の市が同じなら維持、なければデフォルト
       if ([...citySel.options].some(o => o.value === prevCity)) {
         citySel.value = prevCity;
         populateTowns();
@@ -326,15 +420,23 @@
     citySel.addEventListener('change', populateTowns);
     lineSel.addEventListener('change', updateStations);
     propertyType.addEventListener('change', toggleYearBuiltRequirement);
+    ageKnownSel.addEventListener('change', toggleYearBuiltRequirement);
 
     resetBtn.addEventListener('click', () => {
       propertyType.value = 'land';
       area.value = '';
       yearBuilt.value = '';
+      ageKnownSel.value = 'yes';
       toggleYearBuiltRequirement();
 
       populateAddress();
       blockLot.value = '';
+
+      layoutSel.value = '';
+      orientationSel.value = '';
+      structureSel.value = '';
+      floorSel.value = '';
+      buildingFloorsSel.value = '';
 
       lineSel.value = '';
       updateStations();
@@ -343,6 +445,7 @@
       sendMail.checked = false;
 
       resultBox.classList.add('muted');
+      resultBox.classList.remove('error');
       resultBox.textContent = 'まだ査定は行われていません。';
       respJson.textContent = '';
     });
@@ -355,9 +458,9 @@
       const areaVal = parseFloat(area.value);
       if (Number.isNaN(areaVal) || areaVal <= 0) errs.push('面積は0より大きい数値で入力してください。');
 
-      if (propertyType.value !== 'land') {
+      const thisYear = new Date().getFullYear();
+      if (propertyType.value !== 'land' && ageKnownSel.value !== 'no') {
         const y = Number(yearBuilt.value);
-        const thisYear = new Date().getFullYear();
         if (!y || y < 1900 || y > thisYear) errs.push(`築年は1900〜${thisYear}の範囲で入力してください。`);
       }
 
@@ -384,22 +487,29 @@
         }
       };
 
-      if (propertyType.value !== 'land') {
+      if (propertyType.value !== 'land' && ageKnownSel.value !== 'no') {
         payload.year_built = Number(yearBuilt.value);
       }
 
+      // 詳細（任意）
+      const details = {};
+      if (layoutSel.value) details.layout = layoutSel.value;
+      if (orientationSel.value) details.orientation = orientationSel.value;
+      if (structureSel.value) details.structure = structureSel.value;
+      if (floorSel.value) details.floor = Number(floorSel.value);
+      if (buildingFloorsSel.value) details.building_floors = Number(buildingFloorsSel.value);
+      if (Object.keys(details).length > 0) payload.details = details;
+
       // 最寄り駅（任意）
       if (stationSel.value) {
-        payload.station_code = stationSel.value;
+        payload.station_code = stationSel.value;  // 自前コード
       }
 
-      // v0メール（任意）— サーバ側は no-op を想定
+      // メール（任意）— v0 はサーバで no-op
       if (sendMail.checked && email.value) {
         payload.notify_email = email.value.trim();
         payload.options = { send_mail: true };
       }
-
-      // 互換性のため、lat/lng をUIから廃止したが hidden送信はせず未送信（サーバ側でoptional想定）
 
       // 送信
       setBusy(true, '計算中です…');
@@ -416,7 +526,6 @@
           throw new Error((data && data.error) || `HTTP ${res.status}`);
         }
 
-        // 表示（上は要点、下はJSON）
         renderResult(data);
         respJson.textContent = JSON.stringify(data, null, 2);
       } catch (err) {
@@ -436,52 +545,39 @@
         resultBox.textContent = '結果データが取得できませんでした。';
         return;
       }
-      const price = numfmt(r.price);
-      const low = numfmt(r.range_low);
-      const high = numfmt(r.range_high);
+      const price = yen(r.price);
+      const low = yen(r.range_low);
+      const high = yen(r.range_high);
 
       resultBox.classList.remove('muted', 'error');
       resultBox.innerHTML = `
         <div class="price">推定価格：<strong>${price}</strong></div>
         <div class="range">レンジ：${low} 〜 ${high}</div>
         <div class="basis">
-          <span class="chip">基準単価(参考)：${r.basis?.p60_baseline_ppsqm ? numfmt(r.basis.p60_baseline_ppsqm) + ' 円/㎡' : '—'}</span>
+          <span class="chip">基準単価(参考)：${r.basis?.p60_baseline_ppsqm ? num(r.basis.p60_baseline_ppsqm) + ' 円/㎡' : '—'}</span>
           <span class="chip">年式補正：${fmtAdj(r.adjustments?.age_rate)}</span>
           <span class="chip">時点補正：${fmtAdj(r.adjustments?.time_factor, true)}</span>
+          <span class="chip">使用データ：${r.basis?.used_data_count ?? '—'}</span>
         </div>
       `;
     }
 
-    function numfmt(n) {
-      if (typeof n !== 'number') return '—';
-      return n.toLocaleString('ja-JP', { maximumFractionDigits: 0 }) + ' 円';
-    }
-    function fmtAdj(v, multiplicative=false) {
-      if (v == null) return '—';
-      if (multiplicative) return `${v}`;
-      const pct = (v * 100).toFixed(1);
-      return `${pct}%`;
-    }
+    function yen(n){ if(typeof n!=='number') return '—'; return n.toLocaleString('ja-JP',{maximumFractionDigits:0})+' 円'; }
+    function num(n){ if(typeof n!=='number') return '—'; return n.toLocaleString('ja-JP',{maximumFractionDigits:0}); }
+    function fmtAdj(v,mul=false){ if(v==null) return '—'; return mul ? `${v}` : `${(v*100).toFixed(1)}%`; }
 
-    function setBusy(busy, msg) {
-      if (busy) {
-        sendBtn.disabled = true;
-        sendBtn.textContent = msg || '送信中…';
-      } else {
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Send /estimate';
-      }
+    function setBusy(b, msg){
+      if(b){ sendBtn.disabled=true; sendBtn.textContent=msg||'送信中…'; }
+      else { sendBtn.disabled=false; sendBtn.textContent='Send /estimate'; }
     }
 
     // イベント
-    sendBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleSend();
-    });
+    sendBtn.addEventListener('click', (e) => { e.preventDefault(); handleSend(); });
 
     // 初期起動
     populateAddress();
     populateStations();
+    populateFloors();
     toggleYearBuiltRequirement();
   </script>
 </body>

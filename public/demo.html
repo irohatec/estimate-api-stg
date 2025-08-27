@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>不動産 簡易査定（UI検証用）</title>
+  <title>不動産 簡易査定（v3）</title>
   <link rel="stylesheet" href="/style.css?v=1">
 </head>
 <body>
   <div class="wrap">
     <header class="header">
-      <h1>不動産 簡易査定</h1>
-      <p class="subtitle">見やすいUIで入力→査定金額を自動計算（UI検証用）</p>
+      <h1>不動産 簡易査定 <span class="badge">v3</span></h1>
+      <p class="subtitle">所在地と路線・駅は外部データから読み込み（失敗時は縮小データで動作）</p>
     </header>
+
+    <div id="dataNotice" class="notice muted">データ読み込み中…</div>
 
     <main class="grid">
       <!-- 左：フォーム -->
@@ -34,18 +36,18 @@
 
             <div class="field">
               <label for="area">専有面積（㎡） <span class="req">※必須</span></label>
-              <input id="area" type="number" min="0" step="0.01" placeholder="例：100.56">
+              <input id="area" type="number" min="0" step="0.01" placeholder="例：72.50">
             </div>
 
-            <div class="field" id="yearBuiltField">
-              <label for="yearBuilt">築年（西暦） <span class="req" id="yearBuiltReq">※必須</span></label>
-              <input id="yearBuilt" type="number" inputmode="numeric" placeholder="例：2005">
-              <div class="help">※ 土地は不要（建物のみ必須）</div>
+            <div class="field" id="yearField">
+              <label for="yearCode">築年（コード） <span class="req" id="yearReq">※必須（建物のみ）</span></label>
+              <select id="yearCode"></select>
+              <div class="help">※「1981年以前」または 1981〜2025 を選択。土地は不要。</div>
             </div>
           </div>
         </div>
 
-        <!-- 所在地（住所は必須／番地は任意：ラベルに「任意」表記は出さない） -->
+        <!-- 所在地 -->
         <div class="fieldset">
           <div class="legend">所在地 <span class="req">※必須</span></div>
 
@@ -56,12 +58,12 @@
             </div>
 
             <div class="field">
-              <label for="city">市区町村</label>
+              <label for="city">市区</label>
               <select id="city"></select>
             </div>
 
             <div class="field">
-              <label for="town">町・丁目</label>
+              <label for="town">町・丁目（コード）</label>
               <select id="town"></select>
             </div>
           </div>
@@ -69,7 +71,7 @@
           <div class="field">
             <label for="blockLot">番地</label>
             <input id="blockLot" type="text" placeholder="例：1-2-3">
-            <div class="help">未入力でも査定できます</div>
+            <div class="help">未入力でも査定できます（「任意」表記は控えめにしています）。</div>
           </div>
         </div>
 
@@ -122,21 +124,12 @@
                 <option value="">（選択なし）</option>
               </select>
             </div>
-
-            <div class="field">
-              <label for="ageKnown">築年不明</label>
-              <select id="ageKnown">
-                <option value="yes" selected>いいえ（分かる）</option>
-                <option value="no">はい（分からない）</option>
-              </select>
-            </div>
           </div>
         </div>
 
         <!-- 最寄り駅（任意） -->
         <div class="fieldset">
           <div class="legend">最寄り駅（任意）</div>
-
           <div class="field-row">
             <div class="field">
               <label for="line">路線</label>
@@ -196,88 +189,63 @@
 
   <script>
     // =========================
-    // 静的データ（A: 広島市全域／必要に応じて拡張）
+    // 設定
     // =========================
-    const ADDRESS_DATA = {
-      "prefectures": [
-        {
-          "name": "広島県",
-          "cities": [
-            {"name": "広島市中区","towns": ["大手町一丁目","大手町二丁目","紙屋町一丁目","紙屋町二丁目","本通","袋町","基町","上八丁堀","八丁堀","国泰寺町一丁目"]},
-            {"name": "広島市東区","towns": ["若草町","光町一丁目","光町二丁目","牛田本町一丁目","牛田中一丁目","矢賀新町一丁目","曙一丁目","曙二丁目","温品一丁目","戸坂千足一丁目"]},
-            {"name": "広島市南区","towns": ["宇品東一丁目","宇品東二丁目","宇品西一丁目","宇品西二丁目","皆実町一丁目","皆実町二丁目","段原南一丁目","段原日出一丁目","比治山本町","仁保一丁目"]},
-            {"name": "広島市西区","towns": ["横川町一丁目","横川町二丁目","横川新町","草津新町一丁目","庚午北一丁目","観音新町一丁目","己斐本町一丁目","南観音一丁目","三篠町一丁目","福島町一丁目"]},
-            {"name": "広島市安佐南区","towns": ["中筋一丁目","東原一丁目","西原一丁目","祇園一丁目","大町東一丁目","緑井一丁目","山本一丁目","長束一丁目","伴東一丁目","八木一丁目"]},
-            {"name": "広島市安佐北区","towns": ["可部一丁目","可部東一丁目","口田南一丁目","落合一丁目","高陽町高陽台","亀山一丁目","可部南一丁目","口田一丁目","亀山南一丁目","大林一丁目"]},
-            {"name": "広島市佐伯区","towns": ["五日市一丁目","五日市中央一丁目","楽々園一丁目","海老園一丁目","八幡一丁目","美鈴が丘東一丁目","石内東一丁目","皆賀一丁目","城山一丁目","藤の木一丁目"]},
-            {"name": "広島市安芸区","towns": ["船越南一丁目","船越南二丁目","矢野東一丁目","矢野西一丁目","中野一丁目","中野東一丁目","瀬野一丁目","瀬野西一丁目","畑賀一丁目","阿戸町"]}
-          ]
-        }
+    const VERSION_QS = '?v=20250827';
+    const ADDRESS_INDEX_URL = '/assets/address/hiroshima/index.json' + VERSION_QS; // 区リスト
+    const STATION_INDEX_URL = '/assets/stations/index.json' + VERSION_QS;          // 路線リスト
+    const ADDRESS_WARD_URL = (wardCode) => `/assets/address/hiroshima/${wardCode}.json${VERSION_QS}`;
+    const STATION_LINE_URL = (lineCode) => `/assets/stations/${lineCode}.json${VERSION_QS}`;
+
+    // =========================
+    // フォールバック（縮小データ）
+    // =========================
+    const FALLBACK_ADDRESS_INDEX = {
+      pref: "広島県",
+      city: "広島市",
+      wards: [
+        { code: "HRS-MINAMI", name: "広島市南区", towns: [
+          { code: "HRS-MINAMI-0001", name: "皆実町一丁目" },
+          { code: "HRS-MINAMI-0002", name: "段原南一丁目" },
+          { code: "HRS-MINAMI-0003", name: "宇品東一丁目" }
+        ]},
+        { code: "HRS-NAKA", name: "広島市中区", towns: [
+          { code: "HRS-NAKA-0001", name: "大手町一丁目" },
+          { code: "HRS-NAKA-0002", name: "紙屋町一丁目" }
+        ]}
       ]
     };
 
-    // 路線→駅（自前 station_code）
-    const STATION_DATA = {
-      "lines": [
-        {
-          "code": "HRJ-TRAM-MAIN",
-          "name": "広島電鉄 本線",
-          "stations": [
-            {"code":"HRJ-AL-00001","name":"広島駅"},
-            {"code":"HRJ-AL-00005","name":"稲荷町"},
-            {"code":"HRJ-AL-00010","name":"銀山町"},
-            {"code":"HRJ-AL-00012","name":"胡町"},
-            {"code":"HRJ-AL-00015","name":"紙屋町東"},
-            {"code":"HRJ-AL-00016","name":"紙屋町西"},
-            {"code":"HRJ-AL-00020","name":"本通"},
-            {"code":"HRJ-AL-00025","name":"原爆ドーム前"},
-            {"code":"HRJ-AL-00030","name":"十日市町"},
-            {"code":"HRJ-AL-00040","name":"広電西広島"}
+    const FALLBACK_STATION_INDEX = {
+      lines: [
+        { line_code: "HRT/MAIN", name: "広電 本線", inline: {
+          stations: [
+            { code:"HRT-MAIN-0015", name:"紙屋町東" },
+            { code:"HRT-MAIN-0020", name:"本通" },
+            { code:"HRT-MAIN-0030", name:"原爆ドーム前" }
           ]
-        },
-        {
-          "code": "HRJ-TRAM-UJINA",
-          "name": "広島電鉄 宇品線",
-          "stations": [
-            {"code":"HRJ-UJ-00005","name":"比治山橋"},
-            {"code":"HRJ-UJ-00010","name":"県病院前"},
-            {"code":"HRJ-UJ-00014","name":"皆実町六丁目"},
-            {"code":"HRJ-UJ-00018","name":"広大附属学校前"},
-            {"code":"HRJ-UJ-00020","name":"宇品二丁目"},
-            {"code":"HRJ-UJ-00024","name":"海岸通"}
+        }},
+        { line_code: "HRT/UJINA", name: "広電 宇品線", inline: {
+          stations: [
+            { code:"HRT-UJINA-0014", name:"皆実町六丁目" },
+            { code:"HRT-UJINA-0020", name:"宇品二丁目" }
           ]
-        },
-        {
-          "code": "HRJ-TRAM-YOKOGAWA",
-          "name": "広島電鉄 横川線",
-          "stations": [
-            {"code":"HRJ-YK-00005","name":"横川一丁目"},
-            {"code":"HRJ-YK-00010","name":"横川駅"},
-            {"code":"HRJ-YK-00015","name":"別院前"},
-            {"code":"HRJ-YK-00020","name":"寺町"},
-            {"code":"HRJ-YK-00025","name":"十日市町"}
+        }},
+        { line_code: "JR/JRW-SANYO", name: "JR西日本 山陽本線（広島周辺）", inline: {
+          stations: [
+            { code:"JR-SY-0355", name:"広島" },
+            { code:"JR-SY-0365", name:"横川" }
           ]
-        },
-        {
-          "code": "JR-SANYO",
-          "name": "JR 山陽本線（広島周辺）",
-          "stations": [
-            {"code":"JR-SY-0340","name":"海田市"},
-            {"code":"JR-SY-0345","name":"向洋"},
-            {"code":"JR-SY-0350","name":"天神川"},
-            {"code":"JR-SY-0355","name":"広島"},
-            {"code":"JR-SY-0360","name":"新白島"},
-            {"code":"JR-SY-0365","name":"横川"},
-            {"code":"JR-SY-0370","name":"西広島"}
-          ]
-        }
+        }}
       ]
     };
 
     // =========================
-    // DOM ショートカット
+    // DOM
     // =========================
-    const $ = (s) => document.querySelector(s);
+    const $ = s => document.querySelector(s);
+
+    const dataNotice = $('#dataNotice');
     const sendBtn = $('#sendBtn');
     const resetBtn = $('#resetBtn');
     const resultBox = $('#resultBox');
@@ -285,9 +253,10 @@
 
     const propertyType = $('#propertyType');
     const area = $('#area');
-    const yearBuilt = $('#yearBuilt');
-    const yearBuiltField = $('#yearBuiltField');
-    const yearBuiltReq = $('#yearBuiltReq');
+
+    const yearField = $('#yearField');
+    const yearReq = $('#yearReq');
+    const yearCode = $('#yearCode');
 
     const prefSel = $('#pref');
     const citySel = $('#city');
@@ -299,7 +268,6 @@
     const structureSel = $('#structure');
     const floorSel = $('#floor');
     const buildingFloorsSel = $('#buildingFloors');
-    const ageKnownSel = $('#ageKnown');
 
     const lineSel = $('#line');
     const stationSel = $('#station');
@@ -308,188 +276,230 @@
     const sendMail = $('#sendMail');
 
     // =========================
-    // 初期化
+    // 年コード（1981年以前 + 1981..2025）
     // =========================
-    function populateAddress() {
-      // 都道府県
-      prefSel.innerHTML = '';
-      ADDRESS_DATA.prefectures.forEach((p) => {
-        const opt = document.createElement('option');
-        opt.value = p.name;
-        opt.textContent = p.name;
-        prefSel.appendChild(opt);
-      });
+    function populateYearCodes() {
+      yearCode.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = '（選択してください）';
+      yearCode.appendChild(opt0);
 
-      // 市区町村（広島市南区をデフォルト）
-      const pref = ADDRESS_DATA.prefectures[0];
-      citySel.innerHTML = '';
-      pref.cities.forEach(c => {
+      const pre = document.createElement('option');
+      pre.value = 'pre1981';
+      pre.textContent = '1981年以前';
+      yearCode.appendChild(pre);
+
+      // 2025 → 1981
+      const currentMax = 2025;
+      for (let y = currentMax; y >= 1981; y--) {
         const opt = document.createElement('option');
-        opt.value = c.name;
-        opt.textContent = c.name;
+        opt.value = String(y);
+        opt.textContent = String(y);
+        yearCode.appendChild(opt);
+      }
+    }
+
+    // =========================
+    // 住所 & 駅：外部JSON読み込み（失敗時フォールバック）
+    // =========================
+    let addressIndex = null;
+    let stationIndex = null;
+
+    async function tryFetchJson(url) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        return await res.json();
+      } catch (e) { return null; }
+    }
+
+    async function loadIndexes() {
+      dataNotice.classList.remove('error'); dataNotice.classList.add('muted');
+      dataNotice.textContent = 'データ読み込み中…';
+
+      const [addr, lineIdx] = await Promise.all([
+        tryFetchJson(ADDRESS_INDEX_URL),
+        tryFetchJson(STATION_INDEX_URL)
+      ]);
+
+      addressIndex = addr || FALLBACK_ADDRESS_INDEX;
+      stationIndex = lineIdx || FALLBACK_STATION_INDEX;
+
+      if (!addr || !lineIdx) {
+        dataNotice.classList.remove('muted'); dataNotice.classList.add('warn');
+        dataNotice.textContent = '外部データの読み込みに失敗したため、縮小データで動作しています。';
+      } else {
+        dataNotice.classList.remove('warn','error','muted');
+        dataNotice.classList.add('ok');
+        dataNotice.textContent = '外部データを読み込みました。';
+      }
+    }
+
+    function populatePrefAndCity() {
+      // 本実装では広島県・広島市固定
+      prefSel.innerHTML = '';
+      citySel.innerHTML = '';
+
+      const optPref = document.createElement('option');
+      optPref.value = '広島県';
+      optPref.textContent = '広島県';
+      prefSel.appendChild(optPref);
+
+      // 広島市の8区（addressIndexから）
+      addressIndex.wards.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w.code;
+        opt.textContent = w.name;
         citySel.appendChild(opt);
       });
-      citySel.value = '広島市南区';
 
-      // 町・丁目
+      // 既定：南区
+      const minami = addressIndex.wards.find(w => /南区/.test(w.name));
+      if (minami) citySel.value = minami.code;
+
       populateTowns();
     }
 
-    function populateTowns() {
-      const pref = ADDRESS_DATA.prefectures.find(p => p.name === prefSel.value);
-      const city = pref.cities.find(c => c.name === citySel.value);
-      townSel.innerHTML = '';
-      city.towns.forEach(t => {
+    async function populateTowns() {
+      townSel.innerHTML = '<option value="">（選択してください）</option>';
+
+      // フォールバックでは index 内に towns が入っている
+      const wardCode = citySel.value;
+      const wardFromIndex = (addressIndex.wards || []).find(w => w.code === wardCode);
+
+      let towns = wardFromIndex?.towns;
+      if (!towns) {
+        // 外部ward.jsonを読みに行く（本番用）
+        const wardJson = await tryFetchJson(ADDRESS_WARD_URL(wardCode));
+        towns = wardJson?.towns || [];
+      }
+
+      towns.forEach(t => {
         const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = t;
+        opt.value = t.code || t.name;
+        opt.textContent = `${t.name}${t.code ? '' : ''}`;
+        opt.dataset.name = t.name;
         townSel.appendChild(opt);
       });
     }
 
-    function populateStations() {
-      // 路線
+    function populateLines() {
       lineSel.innerHTML = '<option value="">（選択なし）</option>';
-      STATION_DATA.lines.forEach(l => {
+      (stationIndex.lines || []).forEach(l => {
         const opt = document.createElement('option');
-        opt.value = l.code;
+        opt.value = l.line_code;
         opt.textContent = l.name;
         lineSel.appendChild(opt);
       });
-
       stationSel.innerHTML = '<option value="">（選択なし）</option>';
       stationSel.disabled = true;
     }
 
-    function updateStations() {
-      const line = STATION_DATA.lines.find(l => l.code === lineSel.value);
+    async function updateStations() {
       stationSel.innerHTML = '<option value="">（選択なし）</option>';
-      if (!line) {
-        stationSel.disabled = true;
-        return;
+      const lineCode = lineSel.value;
+      if (!lineCode) { stationSel.disabled = true; return; }
+
+      // インラインがあればそれを使用、なければ /assets を読みに行く
+      const inline = (stationIndex.lines || []).find(l => l.line_code === lineCode)?.inline?.stations;
+      let stations = inline;
+      if (!stations) {
+        const lineJson = await tryFetchJson(STATION_LINE_URL(lineCode));
+        stations = lineJson?.stations || [];
       }
-      line.stations.forEach(s => {
+
+      stations.forEach(s => {
         const opt = document.createElement('option');
-        opt.value = s.code; // コードを送る
+        opt.value = s.code;
         opt.textContent = s.name;
         stationSel.appendChild(opt);
       });
       stationSel.disabled = false;
     }
 
+    // =========================
+    // UI挙動
+    // =========================
+    function toggleYearField() {
+      const isLand = propertyType.value === 'land';
+      yearField.classList.toggle('disabled', isLand);
+      yearCode.disabled = isLand;
+      yearReq.style.visibility = isLand ? 'hidden' : 'visible';
+      if (isLand) yearCode.value = '';
+    }
+
     function populateFloors() {
       floorSel.innerHTML = '<option value="">（選択なし）</option>';
       buildingFloorsSel.innerHTML = '<option value="">（選択なし）</option>';
-      for (let i=1; i<=50; i++) {
-        const f1 = document.createElement('option');
-        f1.value = String(i); f1.textContent = `${i}`;
-        floorSel.appendChild(f1);
-
-        const f2 = document.createElement('option');
-        f2.value = String(i); f2.textContent = `${i}`;
-        buildingFloorsSel.appendChild(f2);
+      for (let i=1;i<=50;i++) {
+        const a=document.createElement('option'); a.value=String(i); a.textContent=String(i); floorSel.appendChild(a);
+        const b=document.createElement('option'); b.value=String(i); b.textContent=String(i); buildingFloorsSel.appendChild(b);
       }
     }
 
-    function toggleYearBuiltRequirement() {
-      const type = propertyType.value;
-      const ageUnknown = ageKnownSel.value === 'no';
-      if (type === 'land' || ageUnknown) {
-        yearBuilt.required = false;
-        yearBuilt.value = '';
-        yearBuilt.disabled = true;
-        yearBuiltReq.style.visibility = 'hidden';
-        yearBuiltField.classList.add('disabled');
-      } else {
-        yearBuilt.disabled = false;
-        yearBuilt.required = true;
-        yearBuiltReq.style.visibility = 'visible';
-        yearBuiltField.classList.remove('disabled');
-      }
+    function normalizeText(s) {
+      if (!s) return '';
+      return s.replace(/\s+/g,' ').trim();
     }
 
-    prefSel.addEventListener('change', () => {
-      const prevCity = citySel.value;
-      populateAddress();
-      if ([...citySel.options].some(o => o.value === prevCity)) {
-        citySel.value = prevCity;
-        populateTowns();
-      }
-    });
-
-    citySel.addEventListener('change', populateTowns);
-    lineSel.addEventListener('change', updateStations);
-    propertyType.addEventListener('change', toggleYearBuiltRequirement);
-    ageKnownSel.addEventListener('change', toggleYearBuiltRequirement);
-
-    resetBtn.addEventListener('click', () => {
-      propertyType.value = 'land';
-      area.value = '';
-      yearBuilt.value = '';
-      ageKnownSel.value = 'yes';
-      toggleYearBuiltRequirement();
-
-      populateAddress();
-      blockLot.value = '';
-
-      layoutSel.value = '';
-      orientationSel.value = '';
-      structureSel.value = '';
-      floorSel.value = '';
-      buildingFloorsSel.value = '';
-
-      lineSel.value = '';
-      updateStations();
-
-      email.value = '';
-      sendMail.checked = false;
-
-      resultBox.classList.add('muted');
-      resultBox.classList.remove('error');
-      resultBox.textContent = 'まだ査定は行われていません。';
-      respJson.textContent = '';
-    });
-
+    // =========================
+    // 送信
+    // =========================
     async function handleSend() {
-      // フロント側バリデーション（最小）
       const errs = [];
+      // 必須
       if (!propertyType.value) errs.push('物件種別を選択してください。');
 
       const areaVal = parseFloat(area.value);
       if (Number.isNaN(areaVal) || areaVal <= 0) errs.push('面積は0より大きい数値で入力してください。');
 
-      const thisYear = new Date().getFullYear();
-      if (propertyType.value !== 'land' && ageKnownSel.value !== 'no') {
-        const y = Number(yearBuilt.value);
-        if (!y || y < 1900 || y > thisYear) errs.push(`築年は1900〜${thisYear}の範囲で入力してください。`);
+      const prefName = prefSel.value;
+      const wardCode = citySel.value;
+      const townCode = townSel.value;
+      const townName = townSel.options[townSel.selectedIndex]?.dataset?.name || townSel.options[townSel.selectedIndex]?.textContent || '';
+
+      if (!prefName || !wardCode || !townCode) errs.push('住所（都道府県／市区／町・丁目）を選択してください。');
+
+      const isLand = propertyType.value === 'land';
+      if (!isLand) {
+        if (!yearCode.value) errs.push('築年（コード）を選択してください。');
+        else {
+          if (yearCode.value !== 'pre1981') {
+            const y = Number(yearCode.value);
+            if (!y || y < 1981 || y > 2025) errs.push('築年は1981〜2025から選択してください。');
+          }
+        }
       }
 
-      if (!prefSel.value || !citySel.value || !townSel.value) {
-        errs.push('住所（都道府県／市区町村／町・丁目）を選択してください。');
+      if (errs.length) {
+        showError(errs[0]); return;
       }
 
-      if (errs.length > 0) {
-        resultBox.classList.remove('muted');
-        resultBox.classList.add('error');
-        resultBox.textContent = errs[0];
-        return;
-      }
-
-      // ペイロード（互換重視：不要キーは送らない）
+      // ペイロード作成
       const payload = {
-        property_type: propertyType.value,            // land / house / apartment
+        property_type: propertyType.value,
         area_sqm: areaVal,
         address: {
-          pref: prefSel.value,
-          city: citySel.value,
-          town: townSel.value,
-          block_lot: (blockLot.value || '').trim()
+          pref: prefName,
+          city: (addressIndex.wards.find(w => w.code === wardCode)?.name) || '',
+          town_code: townCode,
+          town: townName || '',
+          block_lot: normalizeText(blockLot.value)
         }
       };
 
-      if (propertyType.value !== 'land' && ageKnownSel.value !== 'no') {
-        payload.year_built = Number(yearBuilt.value);
+      // 築年（建物のみ）
+      if (!isLand) {
+        if (yearCode.value === 'pre1981') {
+          payload.year_code = 'pre1981'; // サーバ側で pre1981 → seismic_era=pre1981 を自動判定
+        } else {
+          payload.year_built = Number(yearCode.value); // 1981..2025
+        }
       }
+
+      // 最寄り駅（任意）
+      if (stationSel.value) payload.station_code = stationSel.value;
 
       // 詳細（任意）
       const details = {};
@@ -498,20 +508,14 @@
       if (structureSel.value) details.structure = structureSel.value;
       if (floorSel.value) details.floor = Number(floorSel.value);
       if (buildingFloorsSel.value) details.building_floors = Number(buildingFloorsSel.value);
-      if (Object.keys(details).length > 0) payload.details = details;
+      if (Object.keys(details).length) payload.details = details;
 
-      // 最寄り駅（任意）
-      if (stationSel.value) {
-        payload.station_code = stationSel.value;  // 自前コード
-      }
-
-      // メール（任意）— v0 はサーバで no-op
+      // メール（任意）
       if (sendMail.checked && email.value) {
         payload.notify_email = email.value.trim();
         payload.options = { send_mail: true };
       }
 
-      // 送信
       setBusy(true, '計算中です…');
       try {
         const res = await fetch('/estimate', {
@@ -519,66 +523,103 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-
-        const data = await res.json().catch(() => ({}));
-
+        const data = await res.json().catch(()=> ({}));
         if (!res.ok || data.ok === false) {
           throw new Error((data && data.error) || `HTTP ${res.status}`);
         }
-
         renderResult(data);
         respJson.textContent = JSON.stringify(data, null, 2);
-      } catch (err) {
-        resultBox.classList.remove('muted');
-        resultBox.classList.add('error');
-        resultBox.textContent = `エラー：${err.message || err}`;
+      } catch (e) {
+        showError(`エラー：${e.message || e}`);
         respJson.textContent = '';
       } finally {
         setBusy(false);
       }
     }
 
+    // =========================
+    // 表示系
+    // =========================
+    function showError(msg) {
+      resultBox.classList.remove('muted');
+      resultBox.classList.add('error');
+      resultBox.textContent = msg;
+    }
+
     function renderResult(data) {
       const r = data && data.result;
-      if (!r) {
-        resultBox.classList.remove('muted');
-        resultBox.textContent = '結果データが取得できませんでした。';
-        return;
-      }
-      const price = yen(r.price);
-      const low = yen(r.range_low);
-      const high = yen(r.range_high);
+      if (!r) { showError('結果データが取得できませんでした。'); return; }
+      const price = asYen(r.price);
+      const low = asYen(r.range_low);
+      const high = asYen(r.range_high);
 
-      resultBox.classList.remove('muted', 'error');
+      resultBox.classList.remove('muted','error');
       resultBox.innerHTML = `
         <div class="price">推定価格：<strong>${price}</strong></div>
         <div class="range">レンジ：${low} 〜 ${high}</div>
         <div class="basis">
-          <span class="chip">基準単価(参考)：${r.basis?.p60_baseline_ppsqm ? num(r.basis.p60_baseline_ppsqm) + ' 円/㎡' : '—'}</span>
+          <span class="chip">基準単価：${num(r.basis?.p60_baseline_ppsqm)} 円/㎡</span>
           <span class="chip">年式補正：${fmtAdj(r.adjustments?.age_rate)}</span>
           <span class="chip">時点補正：${fmtAdj(r.adjustments?.time_factor, true)}</span>
-          <span class="chip">使用データ：${r.basis?.used_data_count ?? '—'}</span>
+          ${r.adjustments?.seismic_penalty != null ? `<span class="chip">耐震区分ペナルティ：${fmtAdj(r.adjustments.seismic_penalty)}</span>` : ''}
+          ${r.basis?.used_data_count != null ? `<span class="chip">使用データ：${r.basis.used_data_count}</span>` : ''}
         </div>
       `;
     }
 
-    function yen(n){ if(typeof n!=='number') return '—'; return n.toLocaleString('ja-JP',{maximumFractionDigits:0})+' 円'; }
+    function asYen(n){ if(typeof n!=='number') return '—'; return n.toLocaleString('ja-JP',{maximumFractionDigits:0})+' 円'; }
     function num(n){ if(typeof n!=='number') return '—'; return n.toLocaleString('ja-JP',{maximumFractionDigits:0}); }
     function fmtAdj(v,mul=false){ if(v==null) return '—'; return mul ? `${v}` : `${(v*100).toFixed(1)}%`; }
 
     function setBusy(b, msg){
-      if(b){ sendBtn.disabled=true; sendBtn.textContent=msg||'送信中…'; }
-      else { sendBtn.disabled=false; sendBtn.textContent='Send /estimate'; }
+      if(b){ sendBtn.disabled = true; sendBtn.textContent = msg || '送信中…'; }
+      else { sendBtn.disabled = false; sendBtn.textContent = 'Send /estimate'; }
     }
 
+    // =========================
     // イベント
-    sendBtn.addEventListener('click', (e) => { e.preventDefault(); handleSend(); });
+    // =========================
+    propertyType.addEventListener('change', toggleYearField);
+    citySel.addEventListener('change', populateTowns);
+    lineSel.addEventListener('change', updateStations);
 
-    // 初期起動
-    populateAddress();
-    populateStations();
-    populateFloors();
-    toggleYearBuiltRequirement();
+    sendBtn.addEventListener('click', (e)=>{ e.preventDefault(); handleSend(); });
+    resetBtn.addEventListener('click', ()=>{
+      propertyType.value = 'land';
+      area.value = '';
+      blockLot.value = '';
+      yearCode.value = '';
+
+      layoutSel.value = '';
+      orientationSel.value = '';
+      structureSel.value = '';
+      floorSel.value = '';
+      buildingFloorsSel.value = '';
+
+      lineSel.value = '';
+      stationSel.innerHTML = '<option value="">（選択なし）</option>';
+      stationSel.disabled = true;
+
+      resultBox.classList.add('muted');
+      resultBox.classList.remove('error');
+      resultBox.textContent = 'まだ査定は行われていません。';
+      respJson.textContent = '';
+
+      toggleYearField();
+    });
+
+    // =========================
+    // 初期化
+    // =========================
+    (async function init(){
+      populateYearCodes();
+      populateFloors();
+      toggleYearField();
+
+      await loadIndexes();
+      populatePrefAndCity();
+      populateLines();
+    })();
   </script>
 </body>
 </html>

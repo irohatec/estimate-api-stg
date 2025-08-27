@@ -40,9 +40,8 @@
             </div>
 
             <div class="field" id="yearField">
-              <label for="yearCode">築年（コード） <span class="req" id="yearReq">※必須（建物のみ）</span></label>
+              <label for="yearCode">築年 <span class="req" id="yearReq">※必須（建物のみ）</span></label>
               <select id="yearCode"></select>
-              <div class="help">※「1981年以前」または 1981〜2025 を選択。土地は不要。</div>
             </div>
           </div>
         </div>
@@ -71,7 +70,6 @@
           <div class="field">
             <label for="blockLot">番地</label>
             <input id="blockLot" type="text" placeholder="例：1-2-3">
-            <div class="help">未入力でも査定できます（「任意」表記は控えめにしています）。</div>
           </div>
         </div>
 
@@ -276,7 +274,7 @@
     const sendMail = $('#sendMail');
 
     // =========================
-    // 年コード（1981年以前 + 1981..2025）
+    // 年コード（2025→1981 の後に「1981年以前」）
     // =========================
     function populateYearCodes() {
       yearCode.innerHTML = '';
@@ -285,12 +283,6 @@
       opt0.textContent = '（選択してください）';
       yearCode.appendChild(opt0);
 
-      const pre = document.createElement('option');
-      pre.value = 'pre1981';
-      pre.textContent = '1981年以前';
-      yearCode.appendChild(pre);
-
-      // 2025 → 1981
       const currentMax = 2025;
       for (let y = currentMax; y >= 1981; y--) {
         const opt = document.createElement('option');
@@ -298,6 +290,12 @@
         opt.textContent = String(y);
         yearCode.appendChild(opt);
       }
+
+      // 1981の直下に「1981年以前」
+      const pre = document.createElement('option');
+      pre.value = 'pre1981';
+      pre.textContent = '1981年以前';
+      yearCode.appendChild(pre);
     }
 
     // =========================
@@ -378,7 +376,7 @@
       towns.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t.code || t.name;
-        opt.textContent = `${t.name}${t.code ? '' : ''}`;
+        opt.textContent = `${t.name}`;
         opt.dataset.name = t.name;
         townSel.appendChild(opt);
       });
@@ -463,7 +461,7 @@
 
       const isLand = propertyType.value === 'land';
       if (!isLand) {
-        if (!yearCode.value) errs.push('築年（コード）を選択してください。');
+        if (!yearCode.value) errs.push('築年を選択してください。');
         else {
           if (yearCode.value !== 'pre1981') {
             const y = Number(yearCode.value);
@@ -472,9 +470,7 @@
         }
       }
 
-      if (errs.length) {
-        showError(errs[0]); return;
-      }
+      if (errs.length) { showError(errs[0]); return; }
 
       // ペイロード作成
       const payload = {
@@ -492,7 +488,7 @@
       // 築年（建物のみ）
       if (!isLand) {
         if (yearCode.value === 'pre1981') {
-          payload.year_code = 'pre1981'; // サーバ側で pre1981 → seismic_era=pre1981 を自動判定
+          payload.year_code = 'pre1981'; // サーバ側で pre1981 → seismic_era=pre1981
         } else {
           payload.year_built = Number(yearCode.value); // 1981..2025
         }

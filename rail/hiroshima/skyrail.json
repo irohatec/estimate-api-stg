@@ -1,0 +1,10 @@
+{
+  "code": "skyrail",
+  "name_ja": "スカイレール みどり坂線",
+  "company": "スカイレールサービス",
+  "stations": [
+    { "code": "skyrail-01", "name_ja": "みどり口", "order": 1 },
+    { "code": "skyrail-02", "name_ja": "みどり中街", "order": 2 },
+    { "code": "skyrail-03", "name_ja": "みどり中央", "order": 3 }
+  ]
+}

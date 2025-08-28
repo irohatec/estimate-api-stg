@@ -1,0 +1,39 @@
+{
+  "prefecture": { "code": "34", "name_ja": "広島県", "name_en": "Hiroshima" },
+  "cities": [
+    {
+      "jis": "34101",
+      "name_ja": "広島市中区",
+      "name_en": "Hiroshima-shi Naka-ku",
+      "file": "34101.json"
+    },
+    {
+      "jis": "34103",
+      "name_ja": "広島市南区",
+      "name_en": "Hiroshima-shi Minami-ku",
+      "file": "34103.json"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "city": { "type": "string" },
+      "towns": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "town": { "type": "string" },
+            "chome": {
+              "description": "丁目を数値配列で。丁目が無い場合は空配列[]",
+              "type": "array",
+              "items": { "type": "integer" }
+            }
+          },
+          "required": ["town", "chome"]
+        }
+      }
+    },
+    "required": ["city", "towns"]
+  }
+}

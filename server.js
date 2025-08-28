@@ -2,32 +2,53 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// __dirname 相当（ESM対策）
+// __dirname（ESM対策）
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- Middlewares ---
+// パス定義
+const PUBLIC_DIR = path.join(__dirname, "public");
+const ASSETS_DIR = path.join(__dirname, "assets");
+
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- Static files ---
-// /public をルート配信（/demo.html など）
-app.use(express.static(path.join(__dirname, "public")));
+// 静的配信（public をルートに）
+app.use(express.static(PUBLIC_DIR));
 
-// /assets をそのまま公開（/assets/... でJSON取得）
-// demo.html 側は ../assets, ./assets, /assets, assets を順に試す実装だが、
-// いずれも最終的に /assets/... へ到達するため、この1本でOK。
-app.use("/assets", express.static(path.join(__dirname, "assets")));
+// /assets も配信（JSONなど）
+app.use("/assets", express.static(ASSETS_DIR));
 
-// --- Health check ---
+// /demo/ と /demo/index.html の互換対応：
+// 1) public/demo/index.html があればそれを返す
+// 2) 無ければ public/demo.html を返す（以前の構成に対応）
+function sendDemo(res) {
+  const demoIndex = path.join(PUBLIC_DIR, "demo", "index.html");
+  const demoSingle = path.join(PUBLIC_DIR, "demo.html");
+  if (fs.existsSync(demoIndex)) {
+    return res.sendFile(demoIndex);
+  } else if (fs.existsSync(demoSingle)) {
+    return res.sendFile(demoSingle);
+  } else {
+    return res.status(404).send("Not Found: demo page");
+  }
+}
+
+app.get("/demo", (_req, res) => sendDemo(res));
+app.get("/demo/", (_req, res) => sendDemo(res));
+app.get("/demo/index.html", (_req, res) => sendDemo(res));
+
+// ヘルスチェック
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
-// --- Start server ---
+// サーバ起動
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

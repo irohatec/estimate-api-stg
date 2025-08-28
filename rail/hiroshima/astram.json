@@ -1,0 +1,20 @@
+{
+  "code": "astram",
+  "name_ja": "アストラムライン",
+  "company": "広島高速交通",
+  "stations": [
+    { "code": "astram-01", "name_ja": "本通", "order": 1 },
+    { "code": "astram-02", "name_ja": "県庁前", "order": 2 },
+    { "code": "astram-03", "name_ja": "城北", "order": 3 },
+    { "code": "astram-04", "name_ja": "新白島", "order": 4 },
+    { "code": "astram-05", "name_ja": "不動院前", "order": 5 },
+    { "code": "astram-06", "name_ja": "祇園新橋北", "order": 6 },
+    { "code": "astram-07", "name_ja": "大原", "order": 7 },
+    { "code": "astram-08", "name_ja": "上安", "order": 8 },
+    { "code": "astram-09", "name_ja": "高取", "order": 9 },
+    { "code": "astram-10", "name_ja": "長楽寺", "order": 10 },
+    { "code": "astram-11", "name_ja": "伴", "order": 11 },
+    { "code": "astram-12", "name_ja": "大塚", "order": 12 },
+    { "code": "astram-13", "name_ja": "広域公園前", "order": 13 }
+  ]
+}

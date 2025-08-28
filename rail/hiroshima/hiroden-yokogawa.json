@@ -1,0 +1,12 @@
+{
+  "code": "hiroden-yokogawa",
+  "name_ja": "広島電鉄 横川線",
+  "company": "広島電鉄",
+  "stations": [
+    { "code": "hiroden-yokogawa-01", "name_ja": "横川駅", "order": 1 },
+    { "code": "hiroden-yokogawa-02", "name_ja": "横川一丁目", "order": 2 },
+    { "code": "hiroden-yokogawa-03", "name_ja": "別院前", "order": 3 },
+    { "code": "hiroden-yokogawa-04", "name_ja": "寺町", "order": 4 },
+    { "code": "hiroden-yokogawa-05", "name_ja": "十日市町", "order": 5 }
+  ]
+}

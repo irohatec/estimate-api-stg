@@ -1,0 +1,17 @@
+{
+  "code": "jr-kure",
+  "name_ja": "JR西日本 呉線",
+  "company": "JR西日本",
+  "stations": [
+    { "code": "jr-kure-01", "name_ja": "海田市", "order": 1 },
+    { "code": "jr-kure-02", "name_ja": "矢野", "order": 2 },
+    { "code": "jr-kure-03", "name_ja": "坂", "order": 3 },
+    { "code": "jr-kure-04", "name_ja": "小屋浦", "order": 4 },
+    { "code": "jr-kure-05", "name_ja": "水尻", "order": 5 },
+    { "code": "jr-kure-06", "name_ja": "天応", "order": 6 },
+    { "code": "jr-kure-07", "name_ja": "呉ポートピア", "order": 7 },
+    { "code": "jr-kure-08", "name_ja": "吉浦", "order": 8 },
+    { "code": "jr-kure-09", "name_ja": "呉", "order": 9 },
+    { "code": "jr-kure-10", "name_ja": "川原石", "order": 10 }
+  ]
+}

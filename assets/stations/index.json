@@ -1,0 +1,11 @@
+{
+  "operator": "広島電鉄",
+  "lines": [
+    {
+      "code": "U",
+      "name_ja": "宇品線",
+      "name_en": "Ujina Line",
+      "file": "ujina.json"
+    }
+  ]
+}

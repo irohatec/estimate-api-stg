@@ -53,21 +53,27 @@ document.getElementById("runBtn").addEventListener("click", () => {
     alert("JSONの形式が正しくありません"); return;
   }
 
-  // 区ごとに集約
   const TARGET_WARDS = { "34101": "中区", "34103": "南区" };
   const wards = {};
 
-  data.forEach(row => {
-    const code = row["市区町村コード"];
+  data.forEach((row, idx) => {
+    // 先頭3行（タイトル/説明/ヘッダー）は飛ばす
+    if (idx < 3) return;
+
+    const code = String(row["令和２年国勢調査　小地域集計　（総務省統計局）"] || "").trim();
     if (!TARGET_WARDS[code]) return;
 
-    const town = row["大字・町名"];
-    const chome = row["字・丁目名"];
+    const wardName = row["__6"];
+    const townName = row["__7"];
+    const chomeName = row["__8"];
+
+    if (!townName) return;
+
     if (!wards[code]) {
-      wards[code] = { wardCode: code, wardName: TARGET_WARDS[code], towns: {} };
+      wards[code] = { wardCode: code, wardName: wardName, towns: {} };
     }
-    if (!wards[code].towns[town]) wards[code].towns[town] = new Set();
-    if (chome) wards[code].towns[town].add(chome);
+    if (!wards[code].towns[townName]) wards[code].towns[townName] = new Set();
+    if (chomeName) wards[code].towns[townName].add(chomeName);
   });
 
   const indexOut = [];

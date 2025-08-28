@@ -2,15 +2,15 @@
   "wards": [
     {
       "code": "34101",
-      "name": "中区",
+      "name": "広島市中区",
       "path": "address/hiroshima/34101.json",
-      "townCount": 0
+      "townCount": 78
     },
     {
       "code": "34103",
-      "name": "南区",
+      "name": "広島市南区",
       "path": "address/hiroshima/34103.json",
-      "townCount": 0
+      "townCount": 69
     }
   ]
 }

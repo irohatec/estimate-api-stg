@@ -1,6 +1,9 @@
 {
-  "prefecture": { "code": "34", "name_ja": "広島県", "name_en": "Hiroshima" },
   "lines": [
-    { "code": "U", "name_ja": "宇品線", "name_en": "Ujina Line", "file": "ujina.json" }
+    {
+      "code": "hiroden-ujina",
+      "name_ja": "広島電鉄 宇品線",
+      "file": "hiroden-ujina.json"
+    }
   ]
 }

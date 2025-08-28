@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Rail JSON 生成ツール（N02-20_Station.geojson → index.json / 路線別JSON）</title>
+  <title>Rail JSON 生成ツール（Station.geojson → index.json / 路線別JSON）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; line-height: 1.6; margin: 20px; }
@@ -15,6 +15,7 @@
     .downloads a { margin-right: 10px; }
     small code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
     label { user-select: none; }
+    .muted { opacity: .6 }
   </style>
 </head>
 <body>
@@ -29,18 +30,30 @@
 
   <h3>2) 抽出条件</h3>
   <div class="row">
-    <label><input type="checkbox" id="useBbox" checked> BBOXを使う</label>
-    <div>minLon: <input type="number" id="minLon" step="0.0001" value="131.5"></div>
-    <div>minLat: <input type="number" id="minLat" step="0.0001" value="33.5"></div>
-    <div>maxLon: <input type="number" id="maxLon" step="0.0001" value="133.5"></div>
-    <div>maxLat: <input type="number" id="maxLat" step="0.0001" value="35.0"></div>
+    <label><input type="radio" name="scope" value="pref" checked> 都道府県で絞る</label>
+    <select id="prefSelect" title="都道府県">
+      <option value="JP">全国（制限なし）</option>
+      <option value="34" selected>広島県（34）</option>
+      <!-- 必要になったら他県も足せます -->
+      <option value="33">岡山県（33）</option>
+      <option value="35">山口県（35）</option>
+      <option value="38">愛媛県（38）</option>
+      <option value="32">島根県（32）</option>
+    </select>
+
+    <span class="muted">／または</span>
+
+    <label><input type="radio" name="scope" value="bbox"> BBOXで絞る</label>
+    <div>minLon: <input type="number" id="minLon" step="0.0001" value="131.5" disabled></div>
+    <div>minLat: <input type="number" id="minLat" step="0.0001" value="33.5" disabled></div>
+    <div>maxLon: <input type="number" id="maxLon" step="0.0001" value="133.5" disabled></div>
+    <div>maxLat: <input type="number" id="maxLat" step="0.0001" value="35.0" disabled></div>
   </div>
   <div class="row" style="margin-top:6px;">
     <div>
       会社名フィルタ（任意・部分一致）:
       <input type="text" id="companyFilter" placeholder="例: 広島電鉄 / JR西日本 / アストラムライン">
     </div>
-    <button id="presetHiroshima" class="btn" type="button">BBOXを広島県に設定</button>
   </div>
 
   <div class="row" style="margin-top:10px;">
@@ -56,6 +69,17 @@
   <p><small>保存先の目安：<code>rail/hiroshima/</code> 配下に置き、<code>index.json</code> は <code>/rail/hiroshima/index.json</code> で参照されるようにしてください。</small></p>
 
 <script>
+// ----- 都道府県 → BBOX プリセット（簡易版：広島＋近隣） -----
+// 必要に応じて他県を追記できます。全国は BBOX 無制限扱い。
+const PREF_BBOX = {
+  "JP": null, // 全国（制限なし）
+  "34": { name: "広島県", minLon: 131.5, minLat: 33.5, maxLon: 133.5, maxLat: 35.0 },
+  "33": { name: "岡山県", minLon: 133.4, minLat: 34.3, maxLon: 134.4, maxLat: 35.2 },
+  "35": { name: "山口県", minLon: 130.8, minLat: 33.7, maxLon: 132.1, maxLat: 34.7 },
+  "38": { name: "愛媛県", minLon: 132.0, minLat: 32.8, maxLon: 133.8, maxLat: 34.1 },
+  "32": { name: "島根県", minLon: 131.4, minLat: 34.0, maxLon: 133.3, maxLat: 35.5 }
+};
+
 // ---------- 小物 ----------
 const log = (...a) => { const el = document.getElementById('log'); el.textContent += '[tool] ' + a.join(' ') + '\n'; el.scrollTop = el.scrollHeight; };
 const warn = (...a) => { const el = document.getElementById('log'); el.textContent += '[WARN] ' + a.join(' ') + '\n'; el.scrollTop = el.scrollHeight; };
@@ -89,7 +113,7 @@ function extractLonLat(geom) {
   let x = Number(coords[0]), y = Number(coords[1]);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-  // 自動スワップ: もし x が緯度っぽく(<=90) かつ y が経度っぽい(>90)なら入替
+  // 自動スワップ: もし x が緯度(<=90) かつ y が経度(>90)っぽければ入替
   if (Math.abs(x) <= 90 && Math.abs(y) >= 90) {
     const t = x; x = y; y = t;
   }
@@ -99,13 +123,32 @@ function extractLonLat(geom) {
   return { lon: x, lat: y };
 }
 
-document.getElementById('presetHiroshima').addEventListener('click', () => {
-  document.getElementById('minLon').value = '131.5';
-  document.getElementById('minLat').value = '33.5';
-  document.getElementById('maxLon').value = '133.5';
-  document.getElementById('maxLat').value = '35.0';
-  document.getElementById('useBbox').checked = true;
-  log('BBOXを広島県プリセットに設定しました。');
+function setScopeUI() {
+  const scope = document.querySelector('input[name="scope"]:checked').value;
+  const disableBbox = (scope !== 'bbox');
+  document.getElementById('minLon').disabled = disableBbox;
+  document.getElementById('minLat').disabled = disableBbox;
+  document.getElementById('maxLon').disabled = disableBbox;
+  document.getElementById('maxLat').disabled = disableBbox;
+  document.getElementById('prefSelect').disabled = (scope !== 'pref');
+}
+document.querySelectorAll('input[name="scope"]').forEach(r =>
+  r.addEventListener('change', setScopeUI)
+);
+setScopeUI();
+
+document.getElementById('prefSelect').addEventListener('change', () => {
+  const val = document.getElementById('prefSelect').value;
+  const preset = PREF_BBOX[val];
+  if (!preset) {
+    log('全国（制限なし）を選択しました。');
+    return;
+  }
+  document.getElementById('minLon').value = preset.minLon;
+  document.getElementById('minLat').value = preset.minLat;
+  document.getElementById('maxLon').value = preset.maxLon;
+  document.getElementById('maxLat').value = preset.maxLat;
+  log(`都道府県を ${preset.name} に設定しました（BBOX自動適用）。`);
 });
 
 document.getElementById('clearBtn').addEventListener('click', () => {
@@ -115,6 +158,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('log').textContent = '';
 });
 
+// ---------- 本体 ----------
 document.getElementById('runBtn').addEventListener('click', () => {
   const raw = document.getElementById('geojson').value.trim();
   if (!raw) { alert('GeoJSONを貼り付けてください'); return; }
@@ -129,20 +173,31 @@ document.getElementById('runBtn').addEventListener('click', () => {
     err('FeatureCollection（features配列）ではありません。'); return;
   }
 
-  const useBbox = document.getElementById('useBbox').checked;
-  const minLon = parseFloat(document.getElementById('minLon').value);
-  const minLat = parseFloat(document.getElementById('minLat').value);
-  const maxLon = parseFloat(document.getElementById('maxLon').value);
-  const maxLat = parseFloat(document.getElementById('maxLat').value);
-  const companyFilter = document.getElementById('companyFilter').value.trim();
+  const scope = document.querySelector('input[name="scope"]:checked').value;
+  let useBbox = false, minLon, minLat, maxLon, maxLat;
 
+  if (scope === 'pref') {
+    const prefCode = document.getElementById('prefSelect').value;
+    const preset = PREF_BBOX[prefCode];
+    if (preset) {
+      useBbox = true;
+      ({minLon, minLat, maxLon, maxLat} = preset);
+    } else {
+      useBbox = false; // 全国
+    }
+  } else {
+    useBbox = true;
+    minLon = parseFloat(document.getElementById('minLon').value);
+    minLat = parseFloat(document.getElementById('minLat').value);
+    maxLon = parseFloat(document.getElementById('maxLon').value);
+    maxLat = parseFloat(document.getElementById('maxLat').value);
+  }
+
+  const companyFilter = document.getElementById('companyFilter').value.trim();
   const inBbox = (lon, lat) => (!useBbox) || (lon>=minLon && lon<=maxLon && lat>=minLat && lat<=maxLat);
 
   // 路線ごとにグループ化
-  // N02 スキーマ（代表例）:
-  //   N02_001: 事業者名（会社）
-  //   N02_002: 路線名
-  //   N02_003: 駅名
+  // N02 スキーマ（代表例）: N02_001=事業者, N02_002=路線名, N02_003=駅名
   const lines = new Map(); // key -> { code, name_ja, company, stations: [] }
 
   let total = 0, used = 0, firstSample = null;
@@ -182,7 +237,11 @@ document.getElementById('runBtn').addEventListener('click', () => {
   }
 
   if (used === 0) {
-    warn('BBOXやフィルタ条件に一致する駅が見つかりませんでした。まずは「BBOXを使う」をOFFにして再実行してください。');
+    if (useBbox) {
+      warn('範囲内の駅が見つかりませんでした。都道府県を「全国」へ変更して再実行してください。');
+    } else {
+      warn('駅が見つかりませんでした。GeoJSONの内容や会社名フィルタをご確認ください。');
+    }
   } else if (firstSample) {
     log(`採用サンプル: ${firstSample.company} / ${firstSample.lineName} / ${firstSample.station} @ (${firstSample.lon.toFixed(5)}, ${firstSample.lat.toFixed(5)})`);
   }

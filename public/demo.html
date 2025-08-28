@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>不動産アプリ デモ（広島）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="/style.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 text-gray-900">
@@ -69,42 +70,27 @@
     const validationMsg = document.getElementById('validationMsg');
     const previewEl = document.getElementById('preview');
 
-    // ---- ここが肝：assets の場所を4通り試すフェイルオーバー ----
-    async function loadAsset(relPath) {
-      const bases = ['../assets/', './assets/', '/assets/', 'assets/'];
-      const errors = [];
-      for (const base of bases) {
-        const url = base + relPath;
-        try {
-          const res = await fetch(url, { cache: 'no-cache' });
-          if (res.ok) {
-            return await res.json();
-          } else {
-            errors.push(`${res.status} ${url}`);
-          }
-        } catch (e) {
-            errors.push(`ERR ${url}`);
-        }
-      }
-      throw new Error('Load failed (tried): ' + errors.join(' | '));
+    // ── 新構成向け：絶対パス固定（/address と /rail） ──
+    async function fetchJSON(url) {
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`Load failed: ${url} (${res.status})`);
+      return res.json();
     }
 
-    // 初期化
-    let addrIndex, ujina, linesIndex, currentCityData;
+    let addrIndex, linesIndex, currentCityData;
 
     async function init() {
-      // アセット読込（相対パスの差異を吸収）
-      addrIndex = await loadAsset('address/hiroshima/index.json');
-      linesIndex = await loadAsset('stations/index.json');
-      ujina = await loadAsset('stations/ujina.json'); // 事前読込（動作検証用）
+      // 住所と路線のインデックスを取得
+      addrIndex = await fetchJSON('/address/hiroshima/index.json');
+      linesIndex = await fetchJSON('/rail/hiroshima/index.json');
 
-      // 市区（JIS）→ 表示ラベルからコードを排除（★変更点1）
+      // 市区（表示ラベルは名称のみ）
       citySel.innerHTML = '<option value="">選択してください</option>' +
         addrIndex.cities
           .map(c => `<option value="${c.jis}" data-file="${c.file}">${c.name_ja}</option>`)
           .join('');
 
-      // 路線 → 表示ラベルからコードを排除（★変更点2）
+      // 路線（表示ラベルは名称のみ）
       lineSel.innerHTML = '<option value="">選択してください</option>' +
         linesIndex.lines
           .map(l => `<option value="${l.code}" data-file="${l.file}">${l.name_ja}</option>`)
@@ -112,7 +98,6 @@
 
       // 初期プレビュー
       updatePreview();
-      // 初期フォーカス
       citySel.focus();
     }
 
@@ -121,7 +106,7 @@
       townSel.innerHTML = '';
       chomeSel.innerHTML = '';
       if (!file) return;
-      currentCityData = await loadAsset(`address/hiroshima/${file}`);
+      currentCityData = await fetchJSON(`/address/hiroshima/${file}`);
       townSel.innerHTML = '<option value="">選択してください</option>' +
         currentCityData.towns.map(t => `<option value="${t.town}">${t.town}</option>`).join('');
       chomeSel.innerHTML = '<option value="">（丁目なし/未選択）</option>';
@@ -142,10 +127,9 @@
 
     lineSel.addEventListener('change', async () => {
       stationSel.innerHTML = '';
-      const code = lineSel.value;
-      if (!code) return;
       const file = lineSel.selectedOptions[0]?.dataset.file;
-      const lineData = await loadAsset(`stations/${file}`);
+      if (!file) return;
+      const lineData = await fetchJSON(`/rail/hiroshima/${file}`);
       stationSel.innerHTML = '<option value="">選択してください</option>' +
         lineData.stations.map(s => `<option value="${s.name_ja}">${s.name_ja}</option>`).join('');
       updatePreview();
@@ -196,7 +180,6 @@
         : "mt-3 text-red-700";
     });
 
-    // 起動
     init().catch(e => {
       console.error(e);
       validationMsg.textContent = '初期化エラー：' + e.message;

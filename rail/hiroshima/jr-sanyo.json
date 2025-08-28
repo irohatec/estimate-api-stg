@@ -1,0 +1,17 @@
+{
+  "code": "jr-sanyo",
+  "name_ja": "JR西日本 山陽本線",
+  "company": "JR西日本",
+  "stations": [
+    { "code": "jr-sanyo-01", "name_ja": "新井口", "order": 1 },
+    { "code": "jr-sanyo-02", "name_ja": "西広島", "order": 2 },
+    { "code": "jr-sanyo-03", "name_ja": "横川", "order": 3 },
+    { "code": "jr-sanyo-04", "name_ja": "広島", "order": 4 },
+    { "code": "jr-sanyo-05", "name_ja": "天神川", "order": 5 },
+    { "code": "jr-sanyo-06", "name_ja": "向洋", "order": 6 },
+    { "code": "jr-sanyo-07", "name_ja": "海田市", "order": 7 },
+    { "code": "jr-sanyo-08", "name_ja": "安芸中野", "order": 8 },
+    { "code": "jr-sanyo-09", "name_ja": "瀬野", "order": 9 },
+    { "code": "jr-sanyo-10", "name_ja": "八本松", "order": 10 }
+  ]
+}

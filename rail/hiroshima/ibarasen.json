@@ -1,0 +1,12 @@
+{
+  "code": "ibarasen",
+  "name_ja": "井原鉄道 井原線",
+  "company": "井原鉄道",
+  "stations": [
+    { "code": "ibarasen-01", "name_ja": "神辺", "order": 1 },
+    { "code": "ibarasen-02", "name_ja": "湯野", "order": 2 },
+    { "code": "ibarasen-03", "name_ja": "御領", "order": 3 },
+    { "code": "ibarasen-04", "name_ja": "子守唄の里高屋", "order": 4 },
+    { "code": "ibarasen-05", "name_ja": "甲奴", "order": 5 }
+  ]
+}

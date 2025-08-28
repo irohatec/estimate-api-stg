@@ -14,7 +14,7 @@
       <h2 class="font-semibold mb-3">① 住所を選択</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <label class="text-sm">市区（JIS）</label>
+          <label class="text-sm">市区</label>
           <select id="city" class="w-full p-2 border rounded"></select>
         </div>
         <div>
@@ -33,7 +33,7 @@
     </section>
 
     <section class="p-4 bg-white rounded-xl shadow">
-      <h2 class="font-semibold mb-3">② 最寄り駅（宇品線）</h2>
+      <h2 class="font-semibold mb-3">② 最寄り駅</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label class="text-sm">路線</label>
@@ -98,13 +98,17 @@
       linesIndex = await loadAsset('stations/index.json');
       ujina = await loadAsset('stations/ujina.json'); // 事前読込（動作検証用）
 
-      // 市区（JIS）
+      // 市区（JIS）→ 表示ラベルからコードを排除（★変更点1）
       citySel.innerHTML = '<option value="">選択してください</option>' +
-        addrIndex.cities.map(c => `<option value="${c.jis}" data-file="${c.file}">${c.name_ja}（${c.jis}）</option>`).join('');
+        addrIndex.cities
+          .map(c => `<option value="${c.jis}" data-file="${c.file}">${c.name_ja}</option>`)
+          .join('');
 
-      // 路線
+      // 路線 → 表示ラベルからコードを排除（★変更点2）
       lineSel.innerHTML = '<option value="">選択してください</option>' +
-        linesIndex.lines.map(l => `<option value="${l.code}" data-file="${l.file}">${l.name_ja}（${l.code}）</option>`).join('');
+        linesIndex.lines
+          .map(l => `<option value="${l.code}" data-file="${l.file}">${l.name_ja}</option>`)
+          .join('');
 
       // 初期プレビュー
       updatePreview();

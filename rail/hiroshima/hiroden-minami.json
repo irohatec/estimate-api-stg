@@ -1,0 +1,12 @@
+{
+  "code": "hiroden-minami",
+  "name_ja": "広島電鉄 皆実線",
+  "company": "広島電鉄",
+  "stations": [
+    { "code": "hiroden-minami-01", "name_ja": "比治山橋", "order": 1 },
+    { "code": "hiroden-minami-02", "name_ja": "南区役所前", "order": 2 },
+    { "code": "hiroden-minami-03", "name_ja": "皆実町二丁目", "order": 3 },
+    { "code": "hiroden-minami-04", "name_ja": "皆実町六丁目", "order": 4 },
+    { "code": "hiroden-minami-05", "name_ja": "広大附属学校前", "order": 5 }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "code": "jr-kabe",
+  "name_ja": "JR西日本 可部線",
+  "company": "JR西日本",
+  "stations": [
+    { "code": "jr-kabe-01", "name_ja": "広島", "order": 1 },
+    { "code": "jr-kabe-02", "name_ja": "横川", "order": 2 },
+    { "code": "jr-kabe-03", "name_ja": "三滝", "order": 3 },
+    { "code": "jr-kabe-04", "name_ja": "安芸長束", "order": 4 },
+    { "code": "jr-kabe-05", "name_ja": "下祇園", "order": 5 },
+    { "code": "jr-kabe-06", "name_ja": "古市橋", "order": 6 },
+    { "code": "jr-kabe-07", "name_ja": "大町", "order": 7 },
+    { "code": "jr-kabe-08", "name_ja": "緑井", "order": 8 },
+    { "code": "jr-kabe-09", "name_ja": "七軒茶屋", "order": 9 },
+    { "code": "jr-kabe-10", "name_ja": "梅林", "order": 10 },
+    { "code": "jr-kabe-11", "name_ja": "上八木", "order": 11 },
+    { "code": "jr-kabe-12", "name_ja": "中島", "order": 12 },
+    { "code": "jr-kabe-13", "name_ja": "可部", "order": 13 },
+    { "code": "jr-kabe-14", "name_ja": "河戸帆待川", "order": 14 },
+    { "code": "jr-kabe-15", "name_ja": "あき亀山", "order": 15 }
+  ]
+}

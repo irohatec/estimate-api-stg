@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Hiroshima real-estate demo (minimal, no errors)",
+  "description": "Hiroshima real-estate demo (compat mode)",
   "scripts": {
     "start": "node server.js",
     "build": "echo \"no build step\""

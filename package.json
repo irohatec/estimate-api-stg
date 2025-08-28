@@ -1,18 +1,19 @@
 {
-  "name": "estimate-api-stg",
+  "name": "estate-demo",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "main": "server.js",
+  "description": "Hiroshima real-estate demo (from scratch)",
   "scripts": {
     "start": "node server.js",
-    "start:dev": "NODE_ENV=development node server.js"
+    "build": "echo \"no build step\""
   },
   "dependencies": {
+    "body-parser": "^1.20.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-rate-limit": "^7.4.0",
-    "resend": "^4.0.0",
-    "firebase-admin": "^12.0.0"
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

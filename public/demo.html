@@ -69,19 +69,34 @@
     const validationMsg = document.getElementById('validationMsg');
     const previewEl = document.getElementById('preview');
 
-    async function loadJSON(path) {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error('Load failed: ' + path);
-      return res.json();
+    // ---- ここが肝：assets の場所を4通り試すフェイルオーバー ----
+    async function loadAsset(relPath) {
+      const bases = ['../assets/', './assets/', '/assets/', 'assets/'];
+      const errors = [];
+      for (const base of bases) {
+        const url = base + relPath;
+        try {
+          const res = await fetch(url, { cache: 'no-cache' });
+          if (res.ok) {
+            return await res.json();
+          } else {
+            errors.push(`${res.status} ${url}`);
+          }
+        } catch (e) {
+            errors.push(`ERR ${url}`);
+        }
+      }
+      throw new Error('Load failed (tried): ' + errors.join(' | '));
     }
 
     // 初期化
     let addrIndex, ujina, linesIndex, currentCityData;
 
     async function init() {
-      addrIndex = await loadJSON('../assets/address/hiroshima/index.json');
-      linesIndex = await loadJSON('../assets/stations/index.json');
-      ujina = await loadJSON('../assets/stations/ujina.json');
+      // アセット読込（相対パスの差異を吸収）
+      addrIndex = await loadAsset('address/hiroshima/index.json');
+      linesIndex = await loadAsset('stations/index.json');
+      ujina = await loadAsset('stations/ujina.json'); // 事前読込（動作検証用）
 
       // 市区（JIS）
       citySel.innerHTML = '<option value="">選択してください</option>' +
@@ -90,6 +105,11 @@
       // 路線
       lineSel.innerHTML = '<option value="">選択してください</option>' +
         linesIndex.lines.map(l => `<option value="${l.code}" data-file="${l.file}">${l.name_ja}（${l.code}）</option>`).join('');
+
+      // 初期プレビュー
+      updatePreview();
+      // 初期フォーカス
+      citySel.focus();
     }
 
     citySel.addEventListener('change', async () => {
@@ -97,7 +117,7 @@
       townSel.innerHTML = '';
       chomeSel.innerHTML = '';
       if (!file) return;
-      currentCityData = await loadJSON(`../assets/address/hiroshima/${file}`);
+      currentCityData = await loadAsset(`address/hiroshima/${file}`);
       townSel.innerHTML = '<option value="">選択してください</option>' +
         currentCityData.towns.map(t => `<option value="${t.town}">${t.town}</option>`).join('');
       chomeSel.innerHTML = '<option value="">（丁目なし/未選択）</option>';
@@ -121,7 +141,7 @@
       const code = lineSel.value;
       if (!code) return;
       const file = lineSel.selectedOptions[0]?.dataset.file;
-      const lineData = await loadJSON(`../assets/stations/${file}`);
+      const lineData = await loadAsset(`stations/${file}`);
       stationSel.innerHTML = '<option value="">選択してください</option>' +
         lineData.stations.map(s => `<option value="${s.name_ja}">${s.name_ja}</option>`).join('');
       updatePreview();
@@ -172,7 +192,12 @@
         : "mt-3 text-red-700";
     });
 
-    init();
+    // 起動
+    init().catch(e => {
+      console.error(e);
+      validationMsg.textContent = '初期化エラー：' + e.message;
+      validationMsg.className = "mt-3 text-red-700";
+    });
   </script>
 </body>
 </html>

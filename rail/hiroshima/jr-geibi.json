@@ -1,0 +1,17 @@
+{
+  "code": "jr-geibi",
+  "name_ja": "JR西日本 芸備線",
+  "company": "JR西日本",
+  "stations": [
+    { "code": "jr-geibi-01", "name_ja": "広島", "order": 1 },
+    { "code": "jr-geibi-02", "name_ja": "矢賀", "order": 2 },
+    { "code": "jr-geibi-03", "name_ja": "戸坂", "order": 3 },
+    { "code": "jr-geibi-04", "name_ja": "安芸矢口", "order": 4 },
+    { "code": "jr-geibi-05", "name_ja": "玖村", "order": 5 },
+    { "code": "jr-geibi-06", "name_ja": "上深川", "order": 6 },
+    { "code": "jr-geibi-07", "name_ja": "中深川", "order": 7 },
+    { "code": "jr-geibi-08", "name_ja": "下深川", "order": 8 },
+    { "code": "jr-geibi-09", "name_ja": "狩留家", "order": 9 },
+    { "code": "jr-geibi-10", "name_ja": "白木山", "order": 10 }
+  ]
+}

@@ -11,9 +11,10 @@
     .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     .btn { padding: 8px 14px; border: 1px solid #333; border-radius: 8px; background: #fff; cursor: pointer; }
     .btn:disabled { opacity: .4; cursor: not-allowed; }
-    .log { background: #111; color: #0f0; padding: 10px; border-radius: 8px; white-space: pre-wrap; max-height: 320px; overflow: auto; }
+    .log { background: #111; color: #0f0; padding: 10px; border-radius: 8px; white-space: pre-wrap; max-height: 360px; overflow: auto; }
     .downloads a { margin-right: 10px; }
     small code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+    label { user-select: none; }
   </style>
 </head>
 <body>
@@ -26,16 +27,20 @@
   <h3>1) GeoJSON（Station）を貼り付け</h3>
   <textarea id="geojson" placeholder="ここに N02-20_Station.geojson の内容を丸ごと貼り付け"></textarea>
 
-  <h3>2) 抽出条件（広島県BBOX：必要に応じて調整可）</h3>
+  <h3>2) 抽出条件</h3>
   <div class="row">
-    <div>minLon: <input type="number" id="minLon" step="0.0001" value="132.0"></div>
-    <div>minLat: <input type="number" id="minLat" step="0.0001" value="34.0"></div>
+    <label><input type="checkbox" id="useBbox" checked> BBOXを使う</label>
+    <div>minLon: <input type="number" id="minLon" step="0.0001" value="131.5"></div>
+    <div>minLat: <input type="number" id="minLat" step="0.0001" value="33.5"></div>
     <div>maxLon: <input type="number" id="maxLon" step="0.0001" value="133.5"></div>
-    <div>maxLat: <input type="number" id="maxLat" step="0.0001" value="34.8"></div>
+    <div>maxLat: <input type="number" id="maxLat" step="0.0001" value="35.0"></div>
+  </div>
+  <div class="row" style="margin-top:6px;">
     <div>
       会社名フィルタ（任意・部分一致）:
-      <input type="text" id="companyFilter" placeholder="例: 広島電鉄 / JR 等">
+      <input type="text" id="companyFilter" placeholder="例: 広島電鉄 / JR西日本 / アストラムライン">
     </div>
+    <button id="presetHiroshima" class="btn" type="button">BBOXを広島県に設定</button>
   </div>
 
   <div class="row" style="margin-top:10px;">
@@ -73,7 +78,36 @@ function slugify(s) {
     .toLowerCase();
 }
 
-// ---------- 本体 ----------
+// 座標を堅牢に取り出す: Point/MultiPoint対応 + lon/lat自動判定
+function extractLonLat(geom) {
+  if (!geom) return null;
+  let coords = null;
+  if (geom.type === 'Point') coords = geom.coordinates;
+  else if (geom.type === 'MultiPoint' && Array.isArray(geom.coordinates) && geom.coordinates.length) coords = geom.coordinates[0];
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+
+  let x = Number(coords[0]), y = Number(coords[1]);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  // 自動スワップ: もし x が緯度っぽく(<=90) かつ y が経度っぽい(>90)なら入替
+  if (Math.abs(x) <= 90 && Math.abs(y) >= 90) {
+    const t = x; x = y; y = t;
+  }
+  // あり得ない値は弾く
+  if (Math.abs(x) > 180 || Math.abs(y) > 90) return null;
+
+  return { lon: x, lat: y };
+}
+
+document.getElementById('presetHiroshima').addEventListener('click', () => {
+  document.getElementById('minLon').value = '131.5';
+  document.getElementById('minLat').value = '33.5';
+  document.getElementById('maxLon').value = '133.5';
+  document.getElementById('maxLat').value = '35.0';
+  document.getElementById('useBbox').checked = true;
+  log('BBOXを広島県プリセットに設定しました。');
+});
+
 document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('geojson').value = '';
   document.getElementById('companyFilter').value = '';
@@ -95,37 +129,31 @@ document.getElementById('runBtn').addEventListener('click', () => {
     err('FeatureCollection（features配列）ではありません。'); return;
   }
 
+  const useBbox = document.getElementById('useBbox').checked;
   const minLon = parseFloat(document.getElementById('minLon').value);
   const minLat = parseFloat(document.getElementById('minLat').value);
   const maxLon = parseFloat(document.getElementById('maxLon').value);
   const maxLat = parseFloat(document.getElementById('maxLat').value);
   const companyFilter = document.getElementById('companyFilter').value.trim();
 
-  const inBbox = (lon, lat) => (lon>=minLon && lon<=maxLon && lat>=minLat && lat<=maxLat);
+  const inBbox = (lon, lat) => (!useBbox) || (lon>=minLon && lon<=maxLon && lat>=minLat && lat<=maxLat);
 
   // 路線ごとにグループ化
-  // N02 スキーマ想定:
+  // N02 スキーマ（代表例）:
   //   N02_001: 事業者名（会社）
   //   N02_002: 路線名
   //   N02_003: 駅名
-  // （年度により若干の揺れがあるためフォールバックも用意）
   const lines = new Map(); // key -> { code, name_ja, company, stations: [] }
 
-  let total = 0, used = 0;
+  let total = 0, used = 0, firstSample = null;
   for (const f of gj.features) {
     total++;
     const p = f.properties || {};
-    const geom = f.geometry || {};
-    if (geom.type !== 'Point' || !Array.isArray(geom.coordinates)) continue;
+    const pos = extractLonLat(f.geometry);
+    if (!pos) continue;
 
-    const lon = +geom.coordinates[0];
-    const lat = +geom.coordinates[1];
-    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+    if (!inBbox(pos.lon, pos.lat)) continue;
 
-    // BBOXフィルタ（広島県相当領域）
-    if (!inBbox(lon, lat)) continue;
-
-    // 属性取得
     const company = p.N02_001 || p.company || p['会社名'] || '';
     const lineName = p.N02_002 || p.line || p['路線名'] || '';
     const station  = p.N02_003 || p.station || p['駅名'] || '';
@@ -133,7 +161,6 @@ document.getElementById('runBtn').addEventListener('click', () => {
     if (!lineName || !station) continue;
     if (companyFilter && !String(company).includes(companyFilter)) continue;
 
-    // key: 会社+路線 でユニーク化（重名対策）
     const key = `${company}__${lineName}`;
     if (!lines.has(key)) {
       const slug = slugify(`${company}_${lineName}`) || 'line';
@@ -146,28 +173,32 @@ document.getElementById('runBtn').addEventListener('click', () => {
     }
     lines.get(key).stations.push({
       name_ja: String(station),
-      lon, lat
+      lon: pos.lon,
+      lat: pos.lat
     });
+
     used++;
+    if (!firstSample) firstSample = { company, lineName, station, lon: pos.lon, lat: pos.lat };
   }
 
   if (used === 0) {
-    warn('BBOXやフィルタ条件に一致する駅が見つかりませんでした。BBOXや会社フィルタを緩めて再実行してください。');
+    warn('BBOXやフィルタ条件に一致する駅が見つかりませんでした。まずは「BBOXを使う」をOFFにして再実行してください。');
+  } else if (firstSample) {
+    log(`採用サンプル: ${firstSample.company} / ${firstSample.lineName} / ${firstSample.station} @ (${firstSample.lon.toFixed(5)}, ${firstSample.lat.toFixed(5)})`);
   }
 
   // 路線ごとの重複駅除去・整列
   const lineFiles = [];
   for (const [, line] of lines) {
-    // 重複駅（同名・同座標）をざっくり排除
     const seen = new Set();
     const uniq = [];
     for (const s of line.stations) {
-      const key2 = `${s.name_ja}|${s.lon.toFixed(6)}|${s.lat.toFixed(6)}`;
-      if (seen.has(key2)) continue;
-      seen.add(key2);
+      const k2 = `${s.name_ja}|${s.lon.toFixed(6)}|${s.lat.toFixed(6)}`;
+      if (seen.has(k2)) continue;
+      seen.add(k2);
       uniq.push(s);
     }
-    // 駅名でソート（順序情報はN02_20_railway側にあるため今回は名前順）
+    // 駅名でソート（厳密な運行順はRailway側参照が必要）
     uniq.sort((a,b)=> a.name_ja.localeCompare(b.name_ja,'ja'));
 
     const lineObj = {
@@ -198,7 +229,7 @@ document.getElementById('runBtn').addEventListener('click', () => {
   const indexOut = { lines: lineFiles };
   downloadJSON(indexOut, 'index.json');
 
-  log(`総features=${total}, BBOX内採用stations=${used}, 路線数=${lineFiles.length}`);
+  log(`総features=${total}, 採用stations=${used}, 路線数=${lineFiles.length}`);
   if (companyFilter) log(`会社フィルタ: "${companyFilter}" を適用しました`);
   log('完了。ダウンロードしたファイルを rail/hiroshima/ へ配置してください。');
 });

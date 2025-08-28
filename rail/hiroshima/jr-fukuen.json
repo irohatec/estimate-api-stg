@@ -1,0 +1,17 @@
+{
+  "code": "jr-fukuen",
+  "name_ja": "JR西日本 福塩線",
+  "company": "JR西日本",
+  "stations": [
+    { "code": "jr-fukuen-01", "name_ja": "府中", "order": 1 },
+    { "code": "jr-fukuen-02", "name_ja": "下川辺", "order": 2 },
+    { "code": "jr-fukuen-03", "name_ja": "中畑", "order": 3 },
+    { "code": "jr-fukuen-04", "name_ja": "河佐", "order": 4 },
+    { "code": "jr-fukuen-05", "name_ja": "備後三川", "order": 5 },
+    { "code": "jr-fukuen-06", "name_ja": "備後矢野", "order": 6 },
+    { "code": "jr-fukuen-07", "name_ja": "上下", "order": 7 },
+    { "code": "jr-fukuen-08", "name_ja": "甲奴", "order": 8 },
+    { "code": "jr-fukuen-09", "name_ja": "梶田", "order": 9 },
+    { "code": "jr-fukuen-10", "name_ja": "備後本庄", "order": 10 }
+  ]
+}

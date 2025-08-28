@@ -8,27 +8,20 @@ import { fileURLToPath } from "url";
 const app = express();
 const port = process.env.PORT || 3000;
 
-// __dirname（ESM対策）
+// __dirname（ESM対応）
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// パス定義
+// public ディレクトリ
 const PUBLIC_DIR = path.join(__dirname, "public");
-const ASSETS_DIR = path.join(__dirname, "assets");
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// 静的配信（public をルートに）
+// public 配下を静的配信
 app.use(express.static(PUBLIC_DIR));
 
-// /assets も配信（JSONなど）
-app.use("/assets", express.static(ASSETS_DIR));
-
-// /demo/ と /demo/index.html の互換対応：
-// 1) public/demo/index.html があればそれを返す
-// 2) 無ければ public/demo.html を返す（以前の構成に対応）
+// /demo ルーティング
 function sendDemo(res) {
   const demoIndex = path.join(PUBLIC_DIR, "demo", "index.html");
   const demoSingle = path.join(PUBLIC_DIR, "demo.html");
@@ -48,7 +41,7 @@ app.get("/demo/index.html", (_req, res) => sendDemo(res));
 // ヘルスチェック
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
-// サーバ起動
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
+  console.log(`Public dir: ${PUBLIC_DIR}`);
 });

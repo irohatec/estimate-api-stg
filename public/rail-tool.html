@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rail JSON 生成ツール（N02-20_Station.geojson → index.json / 路線別JSON）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; line-height: 1.6; margin: 20px; }
+    textarea { width: 100%; height: 220px; }
+    input[type="number"] { width: 140px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .btn { padding: 8px 14px; border: 1px solid #333; border-radius: 8px; background: #fff; cursor: pointer; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .log { background: #111; color: #0f0; padding: 10px; border-radius: 8px; white-space: pre-wrap; max-height: 320px; overflow: auto; }
+    .downloads a { margin-right: 10px; }
+    small code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Rail JSON 生成ツール</h1>
+  <p>
+    国土数値情報の <b>N02-20_Station.geojson</b>（駅データ）を下に貼り付けて「生成」を押すと、<br>
+    <b>rail/hiroshima/index.json</b> と <b>路線ごとの JSON</b> をダウンロードできます。外部送信はありません。
+  </p>
+
+  <h3>1) GeoJSON（Station）を貼り付け</h3>
+  <textarea id="geojson" placeholder="ここに N02-20_Station.geojson の内容を丸ごと貼り付け"></textarea>
+
+  <h3>2) 抽出条件（広島県BBOX：必要に応じて調整可）</h3>
+  <div class="row">
+    <div>minLon: <input type="number" id="minLon" step="0.0001" value="132.0"></div>
+    <div>minLat: <input type="number" id="minLat" step="0.0001" value="34.0"></div>
+    <div>maxLon: <input type="number" id="maxLon" step="0.0001" value="133.5"></div>
+    <div>maxLat: <input type="number" id="maxLat" step="0.0001" value="34.8"></div>
+    <div>
+      会社名フィルタ（任意・部分一致）:
+      <input type="text" id="companyFilter" placeholder="例: 広島電鉄 / JR 等">
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px;">
+    <button id="runBtn" class="btn">生成</button>
+    <button id="clearBtn" class="btn" type="button">リセット</button>
+  </div>
+
+  <h3>ログ</h3>
+  <div id="log" class="log" aria-live="polite"></div>
+
+  <h3>ダウンロード</h3>
+  <div id="downloads" class="downloads"></div>
+  <p><small>保存先の目安：<code>rail/hiroshima/</code> 配下に置き、<code>index.json</code> は <code>/rail/hiroshima/index.json</code> で参照されるようにしてください。</small></p>
+
+<script>
+// ---------- 小物 ----------
+const log = (...a) => { const el = document.getElementById('log'); el.textContent += '[tool] ' + a.join(' ') + '\n'; el.scrollTop = el.scrollHeight; };
+const warn = (...a) => { const el = document.getElementById('log'); el.textContent += '[WARN] ' + a.join(' ') + '\n'; el.scrollTop = el.scrollHeight; };
+const err  = (...a) => { const el = document.getElementById('log'); el.textContent += '[ERROR] ' + a.join(' ') + '\n'; el.scrollTop = el.scrollHeight; };
+
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.textContent = filename; a.className = 'btn';
+  document.getElementById('downloads').appendChild(a);
+  document.getElementById('downloads').appendChild(document.createTextNode(' '));
+}
+
+function slugify(s) {
+  return String(s || '').normalize('NFKC')
+    .replace(/[（）\(\)\s]/g, '_')
+    .replace(/[^\w\-ァ-ン一-龥]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .toLowerCase();
+}
+
+// ---------- 本体 ----------
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('geojson').value = '';
+  document.getElementById('companyFilter').value = '';
+  document.getElementById('downloads').innerHTML = '';
+  document.getElementById('log').textContent = '';
+});
+
+document.getElementById('runBtn').addEventListener('click', () => {
+  const raw = document.getElementById('geojson').value.trim();
+  if (!raw) { alert('GeoJSONを貼り付けてください'); return; }
+
+  let gj;
+  try {
+    gj = JSON.parse(raw);
+  } catch(e) {
+    err('GeoJSONのJSONパースに失敗しました。'); return;
+  }
+  if (!gj || !Array.isArray(gj.features)) {
+    err('FeatureCollection（features配列）ではありません。'); return;
+  }
+
+  const minLon = parseFloat(document.getElementById('minLon').value);
+  const minLat = parseFloat(document.getElementById('minLat').value);
+  const maxLon = parseFloat(document.getElementById('maxLon').value);
+  const maxLat = parseFloat(document.getElementById('maxLat').value);
+  const companyFilter = document.getElementById('companyFilter').value.trim();
+
+  const inBbox = (lon, lat) => (lon>=minLon && lon<=maxLon && lat>=minLat && lat<=maxLat);
+
+  // 路線ごとにグループ化
+  // N02 スキーマ想定:
+  //   N02_001: 事業者名（会社）
+  //   N02_002: 路線名
+  //   N02_003: 駅名
+  // （年度により若干の揺れがあるためフォールバックも用意）
+  const lines = new Map(); // key -> { code, name_ja, company, stations: [] }
+
+  let total = 0, used = 0;
+  for (const f of gj.features) {
+    total++;
+    const p = f.properties || {};
+    const geom = f.geometry || {};
+    if (geom.type !== 'Point' || !Array.isArray(geom.coordinates)) continue;
+
+    const lon = +geom.coordinates[0];
+    const lat = +geom.coordinates[1];
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+
+    // BBOXフィルタ（広島県相当領域）
+    if (!inBbox(lon, lat)) continue;
+
+    // 属性取得
+    const company = p.N02_001 || p.company || p['会社名'] || '';
+    const lineName = p.N02_002 || p.line || p['路線名'] || '';
+    const station  = p.N02_003 || p.station || p['駅名'] || '';
+
+    if (!lineName || !station) continue;
+    if (companyFilter && !String(company).includes(companyFilter)) continue;
+
+    // key: 会社+路線 でユニーク化（重名対策）
+    const key = `${company}__${lineName}`;
+    if (!lines.has(key)) {
+      const slug = slugify(`${company}_${lineName}`) || 'line';
+      lines.set(key, {
+        code: slug,
+        name_ja: String(lineName),
+        company: String(company),
+        stations: []
+      });
+    }
+    lines.get(key).stations.push({
+      name_ja: String(station),
+      lon, lat
+    });
+    used++;
+  }
+
+  if (used === 0) {
+    warn('BBOXやフィルタ条件に一致する駅が見つかりませんでした。BBOXや会社フィルタを緩めて再実行してください。');
+  }
+
+  // 路線ごとの重複駅除去・整列
+  const lineFiles = [];
+  for (const [, line] of lines) {
+    // 重複駅（同名・同座標）をざっくり排除
+    const seen = new Set();
+    const uniq = [];
+    for (const s of line.stations) {
+      const key2 = `${s.name_ja}|${s.lon.toFixed(6)}|${s.lat.toFixed(6)}`;
+      if (seen.has(key2)) continue;
+      seen.add(key2);
+      uniq.push(s);
+    }
+    // 駅名でソート（順序情報はN02_20_railway側にあるため今回は名前順）
+    uniq.sort((a,b)=> a.name_ja.localeCompare(b.name_ja,'ja'));
+
+    const lineObj = {
+      code: line.code,
+      name_ja: line.name_ja,
+      company: line.company || null,
+      stations: uniq.map((s,idx)=>({
+        code: `${line.code}-${String(idx+1).padStart(2,'0')}`,
+        name_ja: s.name_ja,
+        order: idx+1,
+        lon: s.lon,
+        lat: s.lat
+      }))
+    };
+
+    const fileName = `${line.code}.json`;
+    downloadJSON(lineObj, fileName);
+    lineFiles.push({
+      code: line.code,
+      name_ja: line.name_ja,
+      file: fileName,
+      stationCount: lineObj.stations.length
+    });
+  }
+
+  // index.json を出力（名前順）
+  lineFiles.sort((a,b)=> a.name_ja.localeCompare(b.name_ja,'ja'));
+  const indexOut = { lines: lineFiles };
+  downloadJSON(indexOut, 'index.json');
+
+  log(`総features=${total}, BBOX内採用stations=${used}, 路線数=${lineFiles.length}`);
+  if (companyFilter) log(`会社フィルタ: "${companyFilter}" を適用しました`);
+  log('完了。ダウンロードしたファイルを rail/hiroshima/ へ配置してください。');
+});
+</script>
+</body>
+</html>

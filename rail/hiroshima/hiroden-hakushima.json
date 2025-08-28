@@ -1,0 +1,11 @@
+{
+  "code": "hiroden-hakushima",
+  "name_ja": "広島電鉄 白島線",
+  "company": "広島電鉄",
+  "stations": [
+    { "code": "hiroden-hakushima-01", "name_ja": "八丁堀", "order": 1 },
+    { "code": "hiroden-hakushima-02", "name_ja": "女学院前", "order": 2 },
+    { "code": "hiroden-hakushima-03", "name_ja": "縮景園前", "order": 3 },
+    { "code": "hiroden-hakushima-04", "name_ja": "白島", "order": 4 }
+  ]
+}

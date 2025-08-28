@@ -42,6 +42,22 @@ function downloadJSON(obj, filename) {
   document.getElementById("downloads").appendChild(document.createTextNode(" "));
 }
 
+// 丁目の並び替え用：漢数字や全角数字を数値化
+function normalizeChome(str) {
+  if (!str) return 0;
+  const map = { "一":1, "二":2, "三":3, "四":4, "五":5, "六":6, "七":7, "八":8, "九":9, "十":10 };
+  const m = str.match(/^([一二三四五六七八九十0-9０-９]+)丁目$/);
+  if (m) {
+    let s = m[1];
+    // 漢数字 → 数値
+    if (map[s]) return map[s];
+    // 全角数字 → 半角にしてから数値化
+    s = s.replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+    return parseInt(s, 10);
+  }
+  return str;
+}
+
 document.getElementById("runBtn").addEventListener("click", () => {
   const inputText = document.getElementById("input").value.trim();
   if (!inputText) { alert("JSONを貼り付けてください"); return; }
@@ -81,7 +97,7 @@ document.getElementById("runBtn").addEventListener("click", () => {
     const ward = wards[code] || { wardCode: code, wardName: TARGET_WARDS[code], towns: {} };
     const townsArr = Object.entries(ward.towns).map(([name, chomeSet]) => ({
       name,
-      chome: Array.from(chomeSet).sort()
+      chome: Array.from(chomeSet).sort((a,b) => normalizeChome(a) - normalizeChome(b))
     }));
     const obj = { wardCode: ward.wardCode, wardName: ward.wardName, towns: townsArr };
 

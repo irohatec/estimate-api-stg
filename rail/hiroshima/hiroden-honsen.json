@@ -1,0 +1,25 @@
+{
+"code": "hiroden-honsen",
+"name_ja": "広島電鉄 本線",
+"company": "広島電鉄",
+"stations": [
+{ "code": "hiroden-honsen-01", "name_ja": "広島駅", "order": 1 },
+{ "code": "hiroden-honsen-02", "name_ja": "稲荷町", "order": 2 },
+{ "code": "hiroden-honsen-03", "name_ja": "銀山町", "order": 3 },
+{ "code": "hiroden-honsen-04", "name_ja": "胡町", "order": 4 },
+{ "code": "hiroden-honsen-05", "name_ja": "八丁堀", "order": 5 },
+{ "code": "hiroden-honsen-06", "name_ja": "立町", "order": 6 },
+{ "code": "hiroden-honsen-07", "name_ja": "紙屋町東", "order": 7 },
+{ "code": "hiroden-honsen-08", "name_ja": "紙屋町西", "order": 8 },
+{ "code": "hiroden-honsen-09", "name_ja": "原爆ドーム前", "order": 9 },
+{ "code": "hiroden-honsen-10", "name_ja": "本川町", "order": 10 },
+{ "code": "hiroden-honsen-11", "name_ja": "十日市町", "order": 11 },
+{ "code": "hiroden-honsen-12", "name_ja": "土橋", "order": 12 },
+{ "code": "hiroden-honsen-13", "name_ja": "小網町", "order": 13 },
+{ "code": "hiroden-honsen-14", "name_ja": "天満町", "order": 14 },
+{ "code": "hiroden-honsen-15", "name_ja": "観音町", "order": 15 },
+{ "code": "hiroden-honsen-16", "name_ja": "西観音町", "order": 16 },
+{ "code": "hiroden-honsen-17", "name_ja": "福島町", "order": 17 },
+{ "code": "hiroden-honsen-18", "name_ja": "広電西広島", "order": 18 }
+]
+}

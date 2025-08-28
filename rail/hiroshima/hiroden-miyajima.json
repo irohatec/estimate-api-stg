@@ -1,0 +1,29 @@
+{
+"code": "hiroden-miyajima",
+"name_ja": "広島電鉄 宮島線",
+"company": "広島電鉄",
+"stations": [
+{ "code": "hiroden-miyajima-01", "name_ja": "広電西広島", "order": 1 },
+{ "code": "hiroden-miyajima-02", "name_ja": "東高須", "order": 2 },
+{ "code": "hiroden-miyajima-03", "name_ja": "高須", "order": 3 },
+{ "code": "hiroden-miyajima-04", "name_ja": "古江", "order": 4 },
+{ "code": "hiroden-miyajima-05", "name_ja": "草津", "order": 5 },
+{ "code": "hiroden-miyajima-06", "name_ja": "草津南", "order": 6 },
+{ "code": "hiroden-miyajima-07", "name_ja": "商工センター入口", "order": 7 },
+{ "code": "hiroden-miyajima-08", "name_ja": "井口", "order": 8 },
+{ "code": "hiroden-miyajima-09", "name_ja": "修大協創中高前", "order": 9 },
+{ "code": "hiroden-miyajima-10", "name_ja": "広電五日市", "order": 10 },
+{ "code": "hiroden-miyajima-11", "name_ja": "佐伯区役所前", "order": 11 },
+{ "code": "hiroden-miyajima-12", "name_ja": "楽々園", "order": 12 },
+{ "code": "hiroden-miyajima-13", "name_ja": "山陽女学園前", "order": 13 },
+{ "code": "hiroden-miyajima-14", "name_ja": "広電廿日市", "order": 14 },
+{ "code": "hiroden-miyajima-15", "name_ja": "廿日市市役所前", "order": 15 },
+{ "code": "hiroden-miyajima-16", "name_ja": "宮内", "order": 16 },
+{ "code": "hiroden-miyajima-17", "name_ja": "ＪＡ広島病院前", "order": 17 },
+{ "code": "hiroden-miyajima-18", "name_ja": "地御前", "order": 18 },
+{ "code": "hiroden-miyajima-19", "name_ja": "阿品東", "order": 19 },
+{ "code": "hiroden-miyajima-20", "name_ja": "広電阿品", "order": 20 },
+{ "code": "hiroden-miyajima-21", "name_ja": "宮島ボートレース場", "order": 21 },
+{ "code": "hiroden-miyajima-22", "name_ja": "広電宮島口", "order": 22 }
+]
+}

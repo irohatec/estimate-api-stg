@@ -70,7 +70,6 @@
     const validationMsg = document.getElementById('validationMsg');
     const previewEl = document.getElementById('preview');
 
-    // ── 新構成向け：絶対パス固定（/address と /rail） ──
     async function fetchJSON(url) {
       const res = await fetch(url, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`Load failed: ${url} (${res.status})`);
@@ -80,35 +79,33 @@
     let addrIndex, linesIndex, currentCityData;
 
     async function init() {
-      // 住所と路線のインデックスを取得
       addrIndex = await fetchJSON('/address/hiroshima/index.json');
       linesIndex = await fetchJSON('/rail/hiroshima/index.json');
 
-      // 市区（表示ラベルは名称のみ）
+      // index.json の wards を cities に変換して使う
       citySel.innerHTML = '<option value="">選択してください</option>' +
-        addrIndex.cities
-          .map(c => `<option value="${c.jis}" data-file="${c.file}">${c.name_ja}</option>`)
+        addrIndex.wards
+          .map(c => `<option value="${c.path}">${c.name}</option>`)
           .join('');
 
-      // 路線（表示ラベルは名称のみ）
       lineSel.innerHTML = '<option value="">選択してください</option>' +
         linesIndex.lines
           .map(l => `<option value="${l.code}" data-file="${l.file}">${l.name_ja}</option>`)
           .join('');
 
-      // 初期プレビュー
       updatePreview();
       citySel.focus();
     }
 
     citySel.addEventListener('change', async () => {
-      const file = citySel.selectedOptions[0]?.dataset.file;
+      const file = citySel.value;
       townSel.innerHTML = '';
       chomeSel.innerHTML = '';
       if (!file) return;
-      currentCityData = await fetchJSON(`/address/hiroshima/${file}`);
+      currentCityData = await fetchJSON('/' + file);
+
       townSel.innerHTML = '<option value="">選択してください</option>' +
-        currentCityData.towns.map(t => `<option value="${t.town}">${t.town}</option>`).join('');
+        currentCityData.towns.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
       chomeSel.innerHTML = '<option value="">（丁目なし/未選択）</option>';
       updatePreview();
     });
@@ -117,10 +114,10 @@
       const selTown = townSel.value;
       chomeSel.innerHTML = '<option value="">（丁目なし/未選択）</option>';
       if (!selTown || !currentCityData) return updatePreview();
-      const t = currentCityData.towns.find(x => x.town === selTown);
+      const t = currentCityData.towns.find(x => x.name === selTown);
       if (t && t.chome && t.chome.length) {
         chomeSel.innerHTML = '<option value="">丁目を選択</option>' +
-          t.chome.map(n => `<option value="${n}">${n}丁目</option>`).join('');
+          t.chome.map(n => `<option value="${n}">${n}</option>`).join('');
       }
       updatePreview();
     });
@@ -151,22 +148,14 @@
     function updatePreview() {
       const city = citySel.options[citySel.selectedIndex]?.text || '';
       const town = townSel.value || '';
-      const chome = chomeSel.value ? `${chomeSel.value}丁目` : '';
+      const chome = chomeSel.value || '';
       const banchi = banchiInput.value.trim();
       const line = lineSel.value ? lineSel.options[lineSel.selectedIndex].text : '';
       const station = stationSel.value || '';
 
       const obj = {
-        address: {
-          city,
-          town,
-          chome: chome || null,
-          banchi: banchi || null
-        },
-        station: {
-          line: line || null,
-          name: station || null
-        },
+        address: { city, town, chome: chome || null, banchi: banchi || null },
+        station: { line: line || null, name: station || null },
         rule: "番地があれば駅は任意／番地がなければ駅必須"
       };
       previewEl.textContent = JSON.stringify(obj, null, 2);
@@ -175,9 +164,7 @@
     document.getElementById('validateBtn').addEventListener('click', () => {
       const r = validate();
       validationMsg.textContent = r.msg;
-      validationMsg.className = r.ok
-        ? "mt-3 text-green-700"
-        : "mt-3 text-red-700";
+      validationMsg.className = r.ok ? "mt-3 text-green-700" : "mt-3 text-red-700";
     });
 
     init().catch(e => {

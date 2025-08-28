@@ -1,9 +1,109 @@
 {
   "lines": [
     {
+      "code": "hiroden-honsen",
+      "name_ja": "広島電鉄 本線",
+      "file": "hiroden-honsen.json",
+      "stationCount": 0,
+      "company": "広島電鉄"
+    },
+    {
       "code": "hiroden-ujina",
       "name_ja": "広島電鉄 宇品線",
-      "file": "hiroden-ujina.json"
+      "file": "hiroden-ujina.json",
+      "stationCount": 0,
+      "company": "広島電鉄"
+    },
+    {
+      "code": "hiroden-miyajima",
+      "name_ja": "広島電鉄 宮島線",
+      "file": "hiroden-miyajima.json",
+      "stationCount": 0,
+      "company": "広島電鉄"
+    },
+    {
+      "code": "hiroden-ebasen",
+      "name_ja": "広島電鉄 江波線",
+      "file": "hiroden-ebasen.json",
+      "stationCount": 0,
+      "company": "広島電鉄"
+    },
+    {
+      "code": "hiroden-yokogawa",
+      "name_ja": "広島電鉄 横川線",
+      "file": "hiroden-yokogawa.json",
+      "stationCount": 0,
+      "company": "広島電鉄"
+    },
+    {
+      "code": "hiroden-hakushima",
+      "name_ja": "広島電鉄 白島線",
+      "file": "hiroden-hakushima.json",
+      "stationCount": 0,
+      "company": "広島電鉄"
+    },
+    {
+      "code": "hiroden-minami",
+      "name_ja": "広島電鉄 皆実線",
+      "file": "hiroden-minami.json",
+      "stationCount": 0,
+      "company": "広島電鉄"
+    },
+    {
+      "code": "jr-sanyo",
+      "name_ja": "JR西日本 山陽本線",
+      "file": "jr-sanyo.json",
+      "stationCount": 0,
+      "company": "JR西日本"
+    },
+    {
+      "code": "jr-kabe",
+      "name_ja": "JR西日本 可部線",
+      "file": "jr-kabe.json",
+      "stationCount": 0,
+      "company": "JR西日本"
+    },
+    {
+      "code": "jr-geibi",
+      "name_ja": "JR西日本 芸備線",
+      "file": "jr-geibi.json",
+      "stationCount": 0,
+      "company": "JR西日本"
+    },
+    {
+      "code": "jr-kure",
+      "name_ja": "JR西日本 呉線",
+      "file": "jr-kure.json",
+      "stationCount": 0,
+      "company": "JR西日本"
+    },
+    {
+      "code": "jr-fukuen",
+      "name_ja": "JR西日本 福塩線",
+      "file": "jr-fukuen.json",
+      "stationCount": 0,
+      "company": "JR西日本"
+    },
+    {
+      "code": "astram",
+      "name_ja": "アストラムライン",
+      "file": "astram.json",
+      "stationCount": 0,
+      "company": "広島高速交通"
+    },
+    {
+      "code": "skyrail",
+      "name_ja": "スカイレール（瀬野線）",
+      "file": "skyrail.json",
+      "stationCount": 0,
+      "company": "スカイレールサービス"
+    },
+    {
+      "code": "ibara",
+      "name_ja": "井原鉄道 井原線",
+      "file": "ibara.json",
+      "stationCount": 0,
+      "company": "井原鉄道"
     }
   ]
 }

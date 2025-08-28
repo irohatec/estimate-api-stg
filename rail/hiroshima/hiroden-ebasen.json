@@ -1,0 +1,11 @@
+{
+  "code": "hiroden-ebasen",
+  "name_ja": "広島電鉄 江波線",
+  "company": "広島電鉄",
+  "stations": [
+    { "code": "hiroden-ebasen-01", "name_ja": "舟入幸町", "order": 1 },
+    { "code": "hiroden-ebasen-02", "name_ja": "舟入川口町", "order": 2 },
+    { "code": "hiroden-ebasen-03", "name_ja": "舟入南", "order": 3 },
+    { "code": "hiroden-ebasen-04", "name_ja": "江波", "order": 4 }
+  ]
+}

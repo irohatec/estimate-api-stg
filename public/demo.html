@@ -4,44 +4,49 @@
   <meta charset="UTF-8" />
   <title>不動産査定デモ（Step0→Step2＋メール登録）</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- ルート固定 -->
   <link rel="stylesheet" href="/style.css" />
+  <!-- 最小限の強調スタイル（既存CSSに影響しない軽微な追補） -->
+  <style>
+    .is-error{ border-color:#e11d48 !important; background:#fff5f5 !important; }
+    .error-text{ color:#e11d48; display:block; margin-top:6px; font-size:0.9em; }
+    .field .label-row{ display:flex; align-items:center; gap:8px; }
+    .ml-16{ margin-left:16px; }
+    .flex-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .btn-outline{ border:1px solid #94a3b8; background:#fff; padding:.5rem .75rem; border-radius:.5rem; }
+    .chip{ display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2ff; }
+  </style>
 </head>
 <body>
   <div class="wrap">
 
-    <!-- ===================== Header ===================== -->
     <header class="mb-16">
       <h1>不動産査定デモ</h1>
-      <p class="text-sub">Step0: 利用者区分 → Step1: 所在地/沿線 → Step2: 物件情報 → メール登録</p>
+      <p class="text-sub">Step0: 利用者区分 → Step1: 所在地/沿線 → Step2: 物件情報 → メール登録 → 査定結果</p>
     </header>
 
-    <!-- ===================== Step0: 利用者区分（個人/法人） ===================== -->
+    <!-- ========== Step0 ========== -->
     <section class="card mb-24" id="step0">
       <h2>STEP 0. 利用者区分</h2>
-
       <div class="grid">
         <div class="field">
-          <label>あなたは個人/法人のどちらですか？</label>
+          <label class="label-row">あなたは個人/法人のどちらですか？</label>
           <div class="field-row">
             <label><input type="radio" name="userType" value="individual" checked /> 個人</label>
             <label class="ml-16"><input type="radio" name="userType" value="corporate" /> 法人</label>
           </div>
         </div>
-
-        <!-- 法人のみ表示 -->
         <div class="field hidden" id="corpNameField">
           <label for="corpName">会社名（法人のみ必須）</label>
           <input id="corpName" type="text" placeholder="例：○○不動産株式会社" />
+          <small class="error-text" id="err-corpName" style="display:none;"></small>
         </div>
-
         <div class="field hidden" id="corpContactField">
           <label for="corpContact">連絡先（法人のみ必須）</label>
           <input id="corpContact" type="text" placeholder="例：090-1234-5678 / support@example.com" />
           <small class="help">電話番号またはメールアドレスのどちらか</small>
+          <small class="error-text" id="err-corpContact" style="display:none;"></small>
         </div>
       </div>
-
       <div class="result-box info mt-12">
         <p><strong>※注意事項</strong></p>
         <ul>
@@ -51,65 +56,65 @@
       </div>
     </section>
 
-    <!-- ===================== Step1: 所在地 & 沿線 ===================== -->
+    <!-- ========== Step1 ========== -->
     <section class="card mb-24" id="step1">
       <div class="flex-row">
         <h2>STEP 1. 所在地と最寄り駅</h2>
-        <button id="btnCheckStep1" class="btn-outline">入力チェック</button>
+        <button id="btnCheckStep1" class="btn-outline" type="button">入力チェック</button>
       </div>
 
-      <!-- 所在地 -->
       <div class="grid">
-        <div class="field">
+        <div class="field" id="fld-ward">
           <label for="wardSelect">市区町村（※必須）</label>
-          <select id="wardSelect">
-            <option value="">選択してください</option>
-          </select>
+          <select id="wardSelect"><option value="">選択してください</option></select>
           <small class="help" id="wardSrc">読込: /address/hiroshima/index.json</small>
+          <small class="error-text" id="err-ward" style="display:none;"></small>
         </div>
-
-        <div class="field">
+        <div class="field" id="fld-town">
           <label for="townSelect">町名</label>
-          <select id="townSelect" disabled>
-            <option value="">先に市区町村を選択</option>
-          </select>
+          <select id="townSelect" disabled><option value="">先に市区町村を選択</option></select>
+          <small class="error-text" id="err-town" style="display:none;"></small>
         </div>
-
-        <div class="field">
+        <div class="field" id="fld-chome">
           <label for="chomeSelect">丁目</label>
-          <select id="chomeSelect" disabled>
-            <option value="">丁目なし</option>
-          </select>
+          <select id="chomeSelect" disabled><option value="">丁目なし</option></select>
+          <small class="error-text" id="err-chome" style="display:none;"></small>
         </div>
-
-        <div class="field">
+        <div class="field" id="fld-banchi">
           <label for="banchiInput">番地</label>
           <input id="banchiInput" type="text" placeholder="例: 1-2-3" />
           <small class="help">番地が空欄のときは <strong>最寄り駅の指定が必須</strong> です</small>
+          <small class="error-text" id="err-banchi" style="display:none;"></small>
         </div>
       </div>
 
-      <!-- 沿線 -->
       <div class="grid mt-12">
-        <div class="field">
+        <div class="field" id="fld-line">
           <label for="lineSelect">路線</label>
-          <select id="lineSelect">
-            <option value="">選択してください</option>
-          </select>
+          <select id="lineSelect"><option value="">選択してください</option></select>
           <small class="help" id="lineSrc">読込: /rail/hiroshima/index.json</small>
+          <small class="error-text" id="err-line" style="display:none;"></small>
         </div>
-
-        <div class="field">
+        <div class="field" id="fld-station">
           <label for="stationSelect">駅</label>
-          <select id="stationSelect" disabled>
-            <option value="">先に路線を選択</option>
-          </select>
+          <select id="stationSelect" disabled><option value="">先に路線を選択</option></select>
+          <small class="error-text" id="err-station" style="display:none;"></small>
+        </div>
+        <!-- 追加：駅から徒歩 分 -->
+        <div class="field" id="fld-walk">
+          <label for="walkMinutes">駅から徒歩</label>
+          <div class="field-row">
+            <select id="walkMinutes"></select>
+            <span>分</span>
+          </div>
+          <small class="help">駅を選択した場合に入力すると精度が上がります（任意）</small>
+          <small class="error-text" id="err-walk" style="display:none;"></small>
         </div>
       </div>
 
-      <!-- エラーまとめ（Step1） -->
+      <!-- まとめエラー -->
       <div class="result-box error mt-16 hidden" id="step1Error">
-        <p class="mb-4"><strong>入力に不備があります。以下をご確認ください。</strong></p>
+        <p class="mb-4"><strong>入力に不備があります。赤枠の項目をご確認ください。</strong></p>
         <ul id="step1ErrorList"></ul>
       </div>
 
@@ -117,20 +122,20 @@
         <p class="mb-2"><strong>入力ルール</strong></p>
         <ul>
           <li>市区町村は必須です</li>
-          <li>番地が空欄の場合は「最寄り駅の指定」が必須です</li>
+          <li>番地が空欄の場合は「最寄り駅の選択」が必須です</li>
         </ul>
       </div>
     </section>
 
-    <!-- ===================== Step2: 物件情報（築年＝西暦セレクト対応） ===================== -->
+    <!-- ========== Step2 ========== -->
     <section class="card" id="step2">
       <div class="flex-row">
         <h2>STEP 2. 物件情報</h2>
-        <button id="btnCheckStep2" class="btn-outline">入力チェック</button>
+        <button id="btnCheckStep2" class="btn-outline" type="button">入力チェック</button>
       </div>
 
       <div class="grid">
-        <div class="field">
+        <div class="field" id="fld-type">
           <label for="typeSelect">物件種別</label>
           <select id="typeSelect">
             <option value="">選択してください</option>
@@ -140,9 +145,10 @@
             <option value="一棟マンション">一棟マンション</option>
             <option value="一棟アパート">一棟アパート</option>
           </select>
+          <small class="error-text" id="err-type" style="display:none;"></small>
         </div>
 
-        <div class="field">
+        <div class="field" id="fld-area">
           <label for="areaInput">面積</label>
           <div class="field-row">
             <input id="areaInput" type="number" step="0.01" placeholder="例: 80" />
@@ -151,30 +157,26 @@
               <option value="tsubo">坪</option>
             </select>
           </div>
+          <small class="error-text" id="err-area" style="display:none;"></small>
         </div>
 
-        <!-- 築年（西暦）セレクト -->
-        <div class="field">
+        <div class="field" id="fld-built">
           <label for="builtYear">築年（建築年・西暦）</label>
-          <select id="builtYear">
-            <!-- JS で 2025 → 1970 を自動生成、最後に 1969年以前 を追加 -->
-          </select>
+          <select id="builtYear"></select>
           <small class="help">
-            ※査定では <strong>1981年基準</strong>（新耐震）と <strong>2000年基準</strong> を境に補正します。  
-            「新新耐震基準」という用語は一般的ではなく、実務では<strong>2000年基準</strong>を指します。
+            ※査定は <strong>1981年基準</strong> と <strong>2000年基準</strong> を境に補正します。
+            「新新耐震基準」は一般的ではなく、実務では<strong>2000年基準</strong>を指します。
           </small>
+          <small class="error-text" id="err-built" style="display:none;"></small>
         </div>
 
         <div class="field">
           <label for="layoutSelect">間取り</label>
           <select id="layoutSelect">
             <option value="">選択してください</option>
-            <option value="1R">1R</option>
-            <option value="1K">1K</option>
-            <option value="1LDK">1LDK</option>
-            <option value="2LDK">2LDK</option>
-            <option value="3LDK">3LDK</option>
-            <option value="4LDK">4LDK</option>
+            <option value="1R">1R</option><option value="1K">1K</option>
+            <option value="1LDK">1LDK</option><option value="2LDK">2LDK</option>
+            <option value="3LDK">3LDK</option><option value="4LDK">4LDK</option>
             <option value="5LDK以上">5LDK以上</option>
           </select>
         </div>
@@ -183,14 +185,10 @@
           <label for="orientationSelect">採光面</label>
           <select id="orientationSelect">
             <option value="">選択してください</option>
-            <option value="南">南</option>
-            <option value="東">東</option>
-            <option value="西">西</option>
-            <option value="北">北</option>
-            <option value="南東">南東</option>
-            <option value="南西">南西</option>
-            <option value="北東">北東</option>
-            <option value="北西">北西</option>
+            <option value="南">南</option><option value="東">東</option>
+            <option value="西">西</option><option value="北">北</option>
+            <option value="南東">南東</option><option value="南西">南西</option>
+            <option value="北東">北東</option><option value="北西">北西</option>
           </select>
         </div>
       </div>
@@ -200,16 +198,12 @@
           <label for="structureSelect">構造</label>
           <select id="structureSelect">
             <option value="">選択してください</option>
-            <option value="木造">木造</option>
-            <option value="軽量鉄骨">軽量鉄骨</option>
-            <option value="重量鉄骨">重量鉄骨</option>
-            <option value="RC">RC（鉄筋コンクリート）</option>
-            <option value="SRC">SRC（鉄骨鉄筋コンクリート）</option>
-            <option value="PC">PC（プレキャスト）</option>
+            <option value="木造">木造</option><option value="軽量鉄骨">軽量鉄骨</option>
+            <option value="重量鉄骨">重量鉄骨</option><option value="RC">RC</option>
+            <option value="SRC">SRC</option><option value="PC">PC</option>
           </select>
         </div>
 
-        <!-- ご要望により「規模（総戸数）」「建物階数（地下）」は削除 -->
         <div class="field">
           <label for="bldgFloors">建物階数（地上）</label>
           <input id="bldgFloors" type="number" min="0" placeholder="例: 10" />
@@ -222,14 +216,13 @@
         </div>
       </div>
 
-      <!-- エラーまとめ（Step2） -->
       <div class="result-box error mt-16 hidden" id="step2Error">
-        <p class="mb-4"><strong>入力に不備があります。以下をご確認ください。</strong></p>
+        <p class="mb-4"><strong>入力に不備があります。赤枠の項目をご確認ください。</strong></p>
         <ul id="step2ErrorList"></ul>
       </div>
     </section>
 
-    <!-- ===================== メール登録：査定結果を送る ===================== -->
+    <!-- ========== メール登録 / 実行 ========== -->
     <section class="card mt-24" id="emailSection">
       <h2>査定結果をメールで受け取る</h2>
       <div class="grid">
@@ -241,238 +234,290 @@
       </div>
       <div class="grid mt-8">
         <div class="field">
-          <button class="btn-primary" id="btnRegisterEmail" type="button">査定結果を送る（メール登録）</button>
-          <small class="help">※現在は仮実装です。/estimate とメール送信は次の工程で有効化します。</small>
+          <button class="btn-primary" id="btnEstimate" type="button">査定する</button>
+          <small class="help">査定結果は下のボックスに表示されます。</small>
         </div>
       </div>
-      <div class="result-box placeholder mt-8" id="emailMsg" style="display:none;"></div>
+    </section>
+
+    <!-- ========== 結果表示 ========== -->
+    <section class="card mt-16" id="resultSection" style="display:none;">
+      <h2>査定結果</h2>
+      <div class="result-box" id="resultBox"></div>
+      <div class="result-box placeholder mt-8" id="basisBox"></div>
     </section>
 
   </div>
 
-  <!-- ===================== Script ===================== -->
   <script>
-    // --------- 要素参照 ---------
-    const $ = (s)=>document.querySelector(s);
-    const elWard = $('#wardSelect');
-    const elTown = $('#townSelect');
-    const elChome = $('#chomeSelect');
-    const elLine = $('#lineSelect');
-    const elStation = $('#stationSelect');
-    const elBuiltYear = $('#builtYear');
-
-    // Step0
+    const $ = s => document.querySelector(s);
+    // 個人/法人
     const userTypeRadios = document.querySelectorAll('input[name="userType"]');
-    const corpNameField = $('#corpNameField');
-    const corpContactField = $('#corpContactField');
-
-    // --------- ユーティリティ ---------
+    const corpNameField = $('#corpNameField'), corpContactField = $('#corpContactField');
     function toggleCorpFields(){
       const v = [...userTypeRadios].find(r=>r.checked)?.value;
-      const corp = (v === 'corporate');
+      const corp = (v==='corporate');
       corpNameField.classList.toggle('hidden', !corp);
       corpContactField.classList.toggle('hidden', !corp);
     }
     userTypeRadios.forEach(r=>r.addEventListener('change', toggleCorpFields));
     toggleCorpFields();
 
-    // 西暦セレクト生成：2025→1970、最後に「1969年以前」
-    (function buildYearOptions(){
-      const max = 2025;
-      const min = 1970;
-      elBuiltYear.innerHTML = '<option value="">選択してください</option>';
-      for(let y=max; y>=min; y--){
-        const opt = document.createElement('option');
-        opt.value = String(y);
-        opt.textContent = `${y}年`;
-        elBuiltYear.appendChild(opt);
+    // ユーティリティ
+    function setFieldError(fieldId, inputEl, msg){
+      // msgがあれば赤枠＋エラーテキスト、なければ解除
+      const small = document.getElementById('err-'+fieldId);
+      if(msg){
+        inputEl.classList.add('is-error'); if(small){ small.textContent = msg; small.style.display='block'; }
+      }else{
+        inputEl.classList.remove('is-error'); if(small){ small.textContent = ''; small.style.display='none'; }
       }
-      const older = document.createElement('option');
-      older.value = '1969以前';
-      older.textContent = '1969年以前';
-      elBuiltYear.appendChild(older);
+    }
+    function firstErrorScroll(){
+      const el = document.querySelector('.is-error');
+      if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus?.(); }
+    }
+
+    // 西暦セレクト（2025→1970 + 1969年以前）
+    (function buildYearOptions(){
+      const sel = $('#builtYear');
+      sel.innerHTML = '<option value="">選択してください</option>';
+      for(let y=2025; y>=1970; y--) sel.insertAdjacentHTML('beforeend', `<option value="${y}">${y}年</option>`);
+      sel.insertAdjacentHTML('beforeend', `<option value="1969以前">1969年以前</option>`);
     })();
 
-    // --------- 所在地 ---------
+    // 徒歩分（1〜60）
+    (function buildWalk(){
+      const s = $('#walkMinutes');
+      s.innerHTML = '<option value="">選択してください</option>';
+      for(let i=1;i<=60;i++) s.insertAdjacentHTML('beforeend', `<option value="${i}">${i}</option>`);
+    })();
+
+    // 所在地データ
+    const elWard=$('#wardSelect'), elTown=$('#townSelect'), elChome=$('#chomeSelect');
     async function loadWards(){
-      const res = await fetch('/address/hiroshima/index.json', {cache:'no-store'});
-      if(!res.ok) throw new Error('/address/hiroshima/index.json → '+res.status);
+      const res = await fetch('/address/hiroshima/index.json',{cache:'no-store'});
+      if(!res.ok) throw new Error(res.status);
       const data = await res.json();
       elWard.innerHTML = '<option value="">選択してください</option>';
       (data.wards||[]).forEach(w=>{
         const opt = document.createElement('option');
-        opt.value = w.code;
-        opt.textContent = w.name;
-        opt.dataset.path = '/' + w.path; // /address/hiroshima/34103.json
+        opt.value = w.code; opt.textContent = w.name; opt.dataset.path = '/' + w.path;
         elWard.appendChild(opt);
       });
     }
     async function loadTownsByPath(path){
-      elTown.disabled = true;
-      elChome.disabled = true;
-      elTown.innerHTML = '<option value="">読み込み中...</option>';
-      elChome.innerHTML = '<option value="">丁目なし</option>';
-      const res = await fetch(path, {cache:'no-store'});
-      if(!res.ok) throw new Error(path+' → '+res.status);
-      const wardData = await res.json();
-      elTown.innerHTML = '<option value="">選択してください</option>';
-      (wardData.towns||[]).forEach(t=>{
-        const opt = document.createElement('option');
-        opt.value = t.name;
-        opt.textContent = t.name;
-        opt.dataset.chome = JSON.stringify(t.chome||[]);
-        elTown.appendChild(opt);
+      elTown.disabled=true; elChome.disabled=true;
+      elTown.innerHTML='<option value="">読み込み中...</option>'; elChome.innerHTML='<option value="">丁目なし</option>';
+      const res = await fetch(path,{cache:'no-store'}); if(!res.ok) throw new Error(res.status);
+      const ward = await res.json();
+      elTown.innerHTML='<option value="">選択してください</option>';
+      (ward.towns||[]).forEach(t=>{
+        const o=document.createElement('option'); o.value=t.name; o.textContent=t.name; o.dataset.chome=JSON.stringify(t.chome||[]);
+        elTown.appendChild(o);
       });
-      elTown.disabled = false;
-      elChome.disabled = true;
+      elTown.disabled=false; elChome.disabled=true;
     }
     function onTownChange(){
-      const sel = elTown.selectedOptions[0];
-      if(!sel) return;
-      const chomes = JSON.parse(sel.dataset.chome||'[]');
-      if(!chomes.length){
-        elChome.disabled = true;
-        elChome.innerHTML = '<option value="">丁目なし</option>';
-      }else{
-        elChome.disabled = false;
-        elChome.innerHTML = '<option value="">選択してください</option>';
-        chomes.forEach(c=>{
-          const opt = document.createElement('option');
-          opt.value = c;
-          opt.textContent = c;
-          elChome.appendChild(opt);
-        });
+      const sel = elTown.selectedOptions[0]; if(!sel) return;
+      const chs = JSON.parse(sel.dataset.chome||'[]');
+      if(!chs.length){ elChome.disabled=true; elChome.innerHTML='<option value="">丁目なし</option>'; }
+      else{
+        elChome.disabled=false; elChome.innerHTML='<option value="">選択してください</option>';
+        chs.forEach(c=> elChome.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`));
       }
     }
+    elWard.addEventListener('change', async ()=>{
+      const p = elWard.selectedOptions[0]?.dataset.path;
+      try{ if(p) await loadTownsByPath(p); hideStepError(1); }
+      catch{ showStepError(1,['市区町村の読み込みに失敗しました']); }
+    });
+    elTown.addEventListener('change', onTownChange);
 
-    // --------- 路線 ---------
+    // 路線・駅
+    const elLine=$('#lineSelect'), elStation=$('#stationSelect');
     async function loadLines(){
-      const res = await fetch('/rail/hiroshima/index.json', {cache:'no-store'});
-      if(!res.ok) throw new Error('/rail/hiroshima/index.json → '+res.status);
-      const data = await res.json();
-      elLine.innerHTML = '<option value="">選択してください</option>';
+      const res = await fetch('/rail/hiroshima/index.json',{cache:'no-store'});
+      if(!res.ok) throw new Error(res.status);
+      const data=await res.json();
+      elLine.innerHTML='<option value="">選択してください</option>';
       (data.lines||[]).forEach(l=>{
-        const opt = document.createElement('option');
-        opt.value = l.code;
-        opt.textContent = `${l.company} ${l.name_ja}`;
-        opt.dataset.file = l.file; // hiroden-honsen.json
-        elLine.appendChild(opt);
+        const o=document.createElement('option');
+        o.value=l.code; o.textContent=`${l.company} ${l.name_ja}`; o.dataset.file=l.file;
+        elLine.appendChild(o);
       });
     }
     async function loadStationsByFile(file){
-      elStation.disabled = true;
-      elStation.innerHTML = '<option value="">読み込み中...</option>';
-      const url = '/rail/hiroshima/'+file;
-      const res = await fetch(url, {cache:'no-store'});
-      if(!res.ok) throw new Error(url+' → '+res.status);
-      const data = await res.json();
-      elStation.innerHTML = '<option value="">選択してください</option>';
-      (data.stations||[]).forEach(s=>{
-        const opt = document.createElement('option');
-        opt.value = s.code;
-        opt.textContent = s.name_ja;
-        elStation.appendChild(opt);
-      });
-      elStation.disabled = false;
+      elStation.disabled=true; elStation.innerHTML='<option value="">読み込み中...</option>';
+      const url='/rail/hiroshima/'+file;
+      const res=await fetch(url,{cache:'no-store'}); if(!res.ok) throw new Error(res.status);
+      const data=await res.json();
+      elStation.innerHTML='<option value="">選択してください</option>';
+      (data.stations||[]).forEach(s=> elStation.insertAdjacentHTML('beforeend', `<option value="${s.code}">${s.name_ja}</option>`));
+      elStation.disabled=false;
     }
+    elLine.addEventListener('change', async ()=>{
+      const f=elLine.selectedOptions[0]?.dataset.file;
+      try{ if(f) await loadStationsByFile(f); hideStepError(1); }
+      catch{ showStepError(1,['路線/駅の読み込みに失敗しました']); }
+    });
 
-    // --------- Step1 バリデーション ---------
+    // Step1 バリデーション（フィールド別に赤枠＋文言）
     function validateStep1(){
-      const errors = [];
+      const errors=[];
       const ward = elWard.value;
-      const town = elTown.value;
-      const chome = elChome.disabled ? '' : elChome.value;
       const banchi = $('#banchiInput').value.trim();
-      const line = elLine.value;
       const station = elStation.value;
 
+      setFieldError('ward', elWard, ward ? '' : '市区町村を選択してください。');
       if(!ward) errors.push('市区町村を選択してください。');
-      if(!banchi && !station) errors.push('番地が未入力のため、最寄り駅の選択が必須です。');
-      if(banchi && !/^[0-9０-９]+(-[0-9０-９]+)*$/.test(banchi)) {
-        errors.push('番地は半角数字とハイフンで入力してください（例：1-2-3）。');
-      }
-      // 将来：住所×路線の整合チェックを入れる場合はここに追加
 
-      const box = $('#step1Error');
-      const list = $('#step1ErrorList');
-      if(errors.length){
-        list.innerHTML = errors.map(e=>`<li>${e}</li>`).join('');
-        box.classList.remove('hidden');
+      if(banchi && !/^[0-9０-９]+(-[0-9０-９]+)*$/.test(banchi)){
+        setFieldError('banchi', $('#banchiInput'), '番地は半角数字とハイフンで入力してください（例：1-2-3）。');
+        errors.push('番地の形式が正しくありません。');
       }else{
-        box.classList.add('hidden');
+        setFieldError('banchi', $('#banchiInput'), '');
       }
-      return errors.length === 0;
+
+      // 番地空欄なら駅が必須
+      if(!banchi && !station){
+        setFieldError('station', elStation, '番地が空欄のため、最寄り駅の選択が必須です。');
+        errors.push('番地が未入力のため、最寄り駅の選択が必須です。');
+      }else{
+        setFieldError('station', elStation, '');
+      }
+
+      if(errors.length) showStepError(1, errors);
+      else hideStepError(1);
+      if(errors.length) firstErrorScroll();
+      return errors.length===0;
     }
 
-    // --------- Step2 バリデーション ---------
+    // Step2 バリデーション
     function validateStep2(){
-      const errors = [];
-      const type = $('#typeSelect').value;
-      const area = parseFloat($('#areaInput').value);
-      const unit = $('#areaUnit').value;
-      const byear = $('#builtYear').value;
+      const errors=[];
+      const type=$('#typeSelect').value;
+      const area=parseFloat($('#areaInput').value);
+      const byear=$('#builtYear').value;
 
+      setFieldError('type', $('#typeSelect'), type ? '' : '物件種別を選択してください。');
       if(!type) errors.push('物件種別を選択してください。');
-      if(Number.isNaN(area) || area <= 0) errors.push('面積を正しく入力してください。');
+
+      if(Number.isNaN(area) || area<=0){
+        setFieldError('area', $('#areaInput'), '面積を正しく入力してください。');
+        errors.push('面積を正しく入力してください。');
+      }else setFieldError('area', $('#areaInput'), '');
+
+      setFieldError('built', $('#builtYear'), byear ? '' : '築年（建築年）を選択してください。');
       if(!byear) errors.push('築年（建築年）を選択してください。');
 
-      const box = $('#step2Error');
-      const list = $('#step2ErrorList');
-      if(errors.length){
-        list.innerHTML = errors.map(e=>`<li>${e}</li>`).join('');
-        box.classList.remove('hidden');
-      }else{
-        box.classList.add('hidden');
-      }
-      return errors.length === 0;
+      if(errors.length) showStepError(2,errors); else hideStepError(2);
+      if(errors.length) firstErrorScroll();
+      return errors.length===0;
     }
 
-    // --------- イベント ---------
-    elWard.addEventListener('change', async ()=>{
-      const p = elWard.selectedOptions[0]?.dataset.path;
-      try { if(p) await loadTownsByPath(p); $('#step1Error').classList.add('hidden'); }
-      catch(err){ showStep1LoadError('市区町村の読み込みに失敗しました: '+err.message); }
-    });
-    elTown.addEventListener('change', onTownChange);
-    elLine.addEventListener('change', async ()=>{
-      const f = elLine.selectedOptions[0]?.dataset.file;
-      try { if(f) await loadStationsByFile(f); $('#step1Error').classList.add('hidden'); }
-      catch(err){ showStep1LoadError('路線/駅の読み込みに失敗しました: '+err.message); }
-    });
-    function showStep1LoadError(msg){
-      const box = $('#step1Error'); const list = $('#step1ErrorList');
-      list.innerHTML = `<li>${msg}</li>`; box.classList.remove('hidden');
+    function showStepError(step, list){
+      const box = step===1 ? $('#step1Error') : $('#step2Error');
+      const ul  = step===1 ? $('#step1ErrorList') : $('#step2ErrorList');
+      ul.innerHTML = list.map(e=>`<li>${e}</li>`).join('');
+      box.classList.remove('hidden');
     }
+    function hideStepError(step){
+      const box = step===1 ? $('#step1Error') : $('#step2Error');
+      const ul  = step===1 ? $('#step1ErrorList') : $('#step2ErrorList');
+      ul.innerHTML=''; box.classList.add('hidden');
+    }
+
     $('#btnCheckStep1').addEventListener('click', validateStep1);
     $('#btnCheckStep2').addEventListener('click', validateStep2);
 
-    // メール登録（現時点は仮）
-    $('#btnRegisterEmail').addEventListener('click', ()=>{
-      const userType = [...document.querySelectorAll('input[name="userType"]')].find(r=>r.checked)?.value;
-      const corpName = $('#corpName').value.trim();
-      const corpContact = $('#corpContact').value.trim();
-      if(userType==='corporate' && (!corpName || !corpContact)){
-        return showEmailMsg('法人をご選択の場合は「会社名」と「連絡先」が必要です。', true);
+    // 査定実行
+    $('#btnEstimate').addEventListener('click', async ()=>{
+      // 法人チェック
+      const userType=[...document.querySelectorAll('input[name="userType"]')].find(r=>r.checked)?.value;
+      if(userType==='corporate'){
+        const name=$('#corpName').value.trim(), contact=$('#corpContact').value.trim();
+        setFieldError('corpName', $('#corpName'), name? '':'会社名を入力してください。');
+        setFieldError('corpContact', $('#corpContact'), contact? '':'連絡先を入力してください。');
+        if(!name || !contact){ firstErrorScroll(); return; }
       }
-      const email = $('#emailForResult').value.trim();
-      if(!email) return showEmailMsg('メールアドレスを入力してください。', true);
-      // 今は登録確認のみ（査定API接続時に送信処理）
-      showEmailMsg('メールアドレスを仮登録しました。査定API連携後に送信します。', false);
+      if(!validateStep1() || !validateStep2()) return;
+
+      const payload = buildPayload();
+      const resBox=$('#resultBox'), basisBox=$('#basisBox');
+      $('#resultSection').style.display='block';
+      resBox.className='result-box placeholder';
+      resBox.textContent='査定中…';
+
+      try{
+        const res=await fetch('/estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const json=await res.json();
+        if(!json.ok){
+          resBox.className='result-box error';
+          resBox.textContent=json.message||'査定に失敗しました。';
+          basisBox.textContent=json.usedDealsFile?`参照CSV: ${json.usedDealsFile}`:'';
+          return;
+        }
+        const est=json.estimate||{};
+        if(!est.price){
+          resBox.className='result-box error';
+          resBox.textContent='該当サンプルが見つからず、参考価格を算出できませんでした。条件を緩めてください。';
+          basisBox.textContent=json.usedDealsFile?`参照CSV: ${json.usedDealsFile}`:'';
+          return;
+        }
+        resBox.className='result-box';
+        resBox.innerHTML=`
+          <div class="price">参考価格：<strong>${fmtJPY(est.price)}</strong></div>
+          <div class="range">レンジ：${fmtJPY(est.range_low)} 〜 ${fmtJPY(est.range_high)}</div>
+          <div class="basis">使用サンプル数：<span class="chip">${est.basis_count}</span></div>
+        `;
+        basisBox.innerHTML=`
+          <div>参照CSV: ${json.usedDealsFile || '（不明）'}</div>
+          <pre style="white-space:pre-wrap">${JSON.stringify(est.samples||[], null, 2)}</pre>
+        `;
+      }catch{
+        resBox.className='result-box error';
+        resBox.textContent='サーバとの通信に失敗しました。';
+      }
     });
-    function showEmailMsg(msg, isError){
-      const box = $('#emailMsg'); box.className = 'result-box ' + (isError?'error':'info');
-      box.textContent = msg; box.style.display = 'block';
+
+    function buildPayload(){
+      const ward = $('#wardSelect').selectedOptions[0]?.textContent || '';
+      const town = $('#townSelect').value || '';
+      const chome = $('#chomeSelect').disabled ? '' : $('#chomeSelect').value || '';
+      const banchi = $('#banchiInput').value.trim();
+      const station = $('#stationSelect').value || '';
+      const walk = $('#walkMinutes').value || '';
+
+      return {
+        userType: [...document.querySelectorAll('input[name="userType"]')].find(r=>r.checked)?.value,
+        corpName: $('#corpName')?.value?.trim() || '',
+        corpContact: $('#corpContact')?.value?.trim() || '',
+        address: { ward, town, chome, banchi },
+        station,
+        walkMinutes: walk,
+        property: {
+          type: $('#typeSelect').value,
+          area: $('#areaInput').value,
+          unit: $('#areaUnit').value,
+          builtYear: $('#builtYear').value,
+          layout: $('#layoutSelect').value,
+          orientation: $('#orientationSelect').value,
+          structure: $('#structureSelect').value,
+          bldgFloors: $('#bldgFloors').value,
+          unitFloor: $('#unitFloor').value
+        },
+        email: $('#emailForResult').value.trim()
+      };
     }
+
+    function fmtJPY(n){ return (n===null||n===undefined)?'-':'¥'+Number(n).toLocaleString('ja-JP'); }
 
     // 初期ロード
     (async()=>{
-      try{
-        await Promise.all([loadWards(), loadLines()]);
-      }catch(err){
-        const box = $('#step1Error'), list = $('#step1ErrorList');
-        list.innerHTML = `<li>初期データの読み込みに失敗しました: ${err.message}</li>`;
-        box.classList.remove('hidden');
-        console.error(err);
+      try{ await Promise.all([loadWards(), loadLines()]); }
+      catch{
+        showStepError(1,['初期データの読み込みに失敗しました']);
       }
     })();
   </script>

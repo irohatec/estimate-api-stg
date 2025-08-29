@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <title>不動産査定デモ（STEP1&2）</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- このページは style.css 前提で作っています -->
-  <link rel="stylesheet" href="./style.css" />
+  <!-- CSS は public 配下にあるのでルートから参照 -->
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <div class="wrap">
@@ -13,21 +13,20 @@
     <!-- ===================== Header ===================== -->
     <header class="mb-16">
       <h1>不動産査定デモ</h1>
-      <p class="text-sub">STEP1: 所在地/沿線 &nbsp;→&nbsp; STEP2: 物件情報（構造・規模・階数 など）</p>
+      <p class="text-sub">STEP1: 所在地/沿線 → STEP2: 物件情報（構造・規模・階数 など）</p>
     </header>
 
     <!-- ===================== STEP 1: 所在地 & 沿線 ===================== -->
     <section class="card mb-24" id="step1">
       <h2>STEP 1. 所在地と最寄り駅</h2>
 
-      <!-- 所在地：市区町村 → 町 → 丁目 → 番地 -->
+      <!-- 所在地 -->
       <div class="grid">
         <div class="field">
           <label for="wardSelect">市区町村（※必須）</label>
           <select id="wardSelect">
             <option value="">選択してください</option>
           </select>
-          <small class="help">データ元：address/hiroshima/index.json</small>
         </div>
 
         <div class="field">
@@ -42,24 +41,21 @@
           <select id="chomeSelect" disabled>
             <option value="">丁目なし</option>
           </select>
-          <small class="help">丁目が存在しない町は自動で「丁目なし」になります</small>
         </div>
 
         <div class="field">
           <label for="banchiInput">番地</label>
           <input id="banchiInput" type="text" placeholder="例: 1-2-3" />
-          <small class="help">番地が空の場合は後で「駅の指定」が必須になります</small>
         </div>
       </div>
 
-      <!-- 沿線：路線 → 駅 -->
+      <!-- 沿線 -->
       <div class="grid mt-12">
         <div class="field">
           <label for="lineSelect">路線</label>
           <select id="lineSelect">
             <option value="">選択してください</option>
           </select>
-          <small class="help">データ元：rail/hiroshima/index.json</small>
         </div>
 
         <div class="field">
@@ -70,21 +66,19 @@
         </div>
       </div>
 
-      <!-- かんたんバリデーション（入口ルール表示のみ） -->
       <div class="result-box info mt-16" id="step1Info">
         <p>入力ルール：</p>
         <ul>
           <li>市区町村は必須です</li>
-          <li>番地が空欄のときは、<strong>最寄り駅の指定が必須</strong>です</li>
+          <li>番地が空欄のときは <strong>最寄り駅の指定が必須</strong> です</li>
         </ul>
       </div>
     </section>
 
-    <!-- ===================== STEP 2: 物件情報（復元＋拡充） ===================== -->
+    <!-- ===================== STEP 2: 物件情報 ===================== -->
     <section class="card" id="step2">
       <h2>STEP 2. 物件情報</h2>
 
-      <!-- 種別・面積・築年数・間取り・採光面 -->
       <div class="grid">
         <div class="field">
           <label for="typeSelect">物件種別</label>
@@ -95,14 +89,13 @@
             <option value="土地">土地</option>
             <option value="一棟マンション">一棟マンション</option>
             <option value="一棟アパート">一棟アパート</option>
-            <option value="その他">その他</option>
           </select>
         </div>
 
         <div class="field">
           <label for="areaInput">面積</label>
           <div class="field-row">
-            <input id="areaInput" type="number" step="0.01" placeholder="数値のみ (例: 80)" />
+            <input id="areaInput" type="number" step="0.01" placeholder="例: 80" />
             <select id="areaUnit">
               <option value="sqm">㎡</option>
               <option value="tsubo">坪</option>
@@ -121,11 +114,8 @@
             <option value="">選択してください</option>
             <option value="1R">1R</option>
             <option value="1K">1K</option>
-            <option value="1DK">1DK</option>
             <option value="1LDK">1LDK</option>
-            <option value="2DK">2DK</option>
             <option value="2LDK">2LDK</option>
-            <option value="3DK">3DK</option>
             <option value="3LDK">3LDK</option>
             <option value="4LDK">4LDK</option>
             <option value="5LDK以上">5LDK以上</option>
@@ -148,7 +138,6 @@
         </div>
       </div>
 
-      <!-- 構造・規模・階数（復元項目） -->
       <div class="grid mt-12">
         <div class="field">
           <label for="structureSelect">構造</label>
@@ -160,12 +149,11 @@
             <option value="RC">RC（鉄筋コンクリート）</option>
             <option value="SRC">SRC（鉄骨鉄筋コンクリート）</option>
             <option value="PC">PC（プレキャスト）</option>
-            <option value="その他">その他</option>
           </select>
         </div>
 
         <div class="field">
-          <label for="totalUnits">規模（総戸数 / 戸建は1）</label>
+          <label for="totalUnits">規模（総戸数）</label>
           <input id="totalUnits" type="number" min="0" placeholder="例: 50" />
         </div>
 
@@ -182,175 +170,97 @@
         <div class="field">
           <label for="unitFloor">所在階</label>
           <input id="unitFloor" type="number" min="0" placeholder="例: 7" />
-          <small class="help">マンション/共同住宅のみ入力してください</small>
         </div>
-      </div>
-
-      <div class="result-box placeholder mt-16">
-        <p>このステップでは入力フォームのみ復元しています。次のステップで査定API（/estimate）に接続します。</p>
       </div>
     </section>
 
-    <!-- （次ステップのボタンはまだ出しません。API接続時に追加） -->
-
   </div>
 
+  <!-- ===================== Script ===================== -->
   <script>
-    // ============ ユーティリティ ============
-    const qs = (sel) => document.querySelector(sel);
-    const elWard = qs('#wardSelect');
-    const elTown = qs('#townSelect');
-    const elChome = qs('#chomeSelect');
-    const elBanchi = qs('#banchiInput');
+    const elWard = document.querySelector('#wardSelect');
+    const elTown = document.querySelector('#townSelect');
+    const elChome = document.querySelector('#chomeSelect');
+    const elLine = document.querySelector('#lineSelect');
+    const elStation = document.querySelector('#stationSelect');
 
-    const elLine = qs('#lineSelect');
-    const elStation = qs('#stationSelect');
-
-    // ============ 所在地データのロード ============
-    // address/hiroshima/index.json を読み、wards を並べる
+    // 所在地ロード
     async function loadWards() {
-      const res = await fetch('address/hiroshima/index.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error('住所インデックスの読み込みに失敗しました');
+      const res = await fetch('/address/hiroshima/index.json');
       const data = await res.json();
-      const wards = data.wards || [];
-
-      // 初期化
       elWard.innerHTML = '<option value="">選択してください</option>';
-
-      // 例：value=code, data-path=path（実ファイル）で保持
-      wards.forEach(w => {
+      data.wards.forEach(w => {
         const opt = document.createElement('option');
         opt.value = w.code;
         opt.textContent = w.name;
-        opt.dataset.path = w.path;
+        opt.dataset.path = '/' + w.path;
         elWard.appendChild(opt);
       });
     }
-
-    // 選択された ward の JSON を読み、town/chome を埋めていく
-    async function loadTownsByWardPath(jsonPath) {
-      elTown.disabled = true;
-      elChome.disabled = true;
-      elTown.innerHTML = '<option value="">読み込み中...</option>';
-      elChome.innerHTML = '<option value="">丁目なし</option>';
-
-      const res = await fetch(jsonPath, { cache: 'no-store' });
-      if (!res.ok) {
-        elTown.innerHTML = '<option value="">読み込み失敗</option>';
-        return;
-      }
-      const wardData = await res.json();
-      const towns = wardData.towns || [];
-
+    async function loadTowns(path) {
+      const res = await fetch(path);
+      const data = await res.json();
+      elTown.disabled = false;
       elTown.innerHTML = '<option value="">選択してください</option>';
-      towns.forEach(t => {
+      data.towns.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t.name;
         opt.textContent = t.name;
-        // 丁目リストを文字列として埋め込む（選択時に復元）
         opt.dataset.chome = JSON.stringify(t.chome || []);
         elTown.appendChild(opt);
       });
-
-      elTown.disabled = false;
-      elChome.disabled = true;
-      elChome.innerHTML = '<option value="">丁目なし</option>';
     }
-
-    // 町選択時に丁目を反映
-    function onTownChange() {
+    elWard.addEventListener('change', () => {
+      const path = elWard.selectedOptions[0].dataset.path;
+      loadTowns(path);
+    });
+    elTown.addEventListener('change', () => {
       const sel = elTown.selectedOptions[0];
-      if (!sel) return;
+      const chomes = JSON.parse(sel.dataset.chome || '[]');
+      elChome.disabled = (chomes.length === 0);
+      elChome.innerHTML = chomes.length ? '<option value="">選択してください</option>' : '<option value="">丁目なし</option>';
+      chomes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        elChome.appendChild(opt);
+      });
+    });
 
-      const chomeList = JSON.parse(sel.dataset.chome || '[]');
-      if (!chomeList || chomeList.length === 0) {
-        elChome.disabled = true;
-        elChome.innerHTML = '<option value="">丁目なし</option>';
-      } else {
-        elChome.disabled = false;
-        elChome.innerHTML = '<option value="">選択してください</option>';
-        chomeList.forEach(ch => {
-          const opt = document.createElement('option');
-          opt.value = ch;
-          opt.textContent = ch;
-          elChome.appendChild(opt);
-        });
-      }
-    }
-
-    // ============ 沿線データのロード ============
-    // rail/hiroshima/index.json を読み、路線 → 駅を埋める
+    // 路線ロード
     async function loadLines() {
-      const res = await fetch('rail/hiroshima/index.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error('路線インデックスの読み込みに失敗しました');
+      const res = await fetch('/rail/hiroshima/index.json');
       const data = await res.json();
-      const lines = data.lines || [];
-
       elLine.innerHTML = '<option value="">選択してください</option>';
-      lines.forEach(l => {
+      data.lines.forEach(l => {
         const opt = document.createElement('option');
         opt.value = l.code;
         opt.textContent = `${l.company} ${l.name_ja}`;
-        // 実体ファイル名（例: hiroden-honsen.json）
         opt.dataset.file = l.file;
+        elLine.appendChild(opt);
       });
     }
-
-    async function loadStationsByLineFile(fileName) {
-      elStation.disabled = true;
-      elStation.innerHTML = '<option value="">読み込み中...</option>';
-
-      // 路線ファイルは rail/hiroshima/ 配下
-      const res = await fetch(`rail/hiroshima/${fileName}`, { cache: 'no-store' });
-      if (!res.ok) {
-        elStation.innerHTML = '<option value="">読み込み失敗</option>';
-        return;
-      }
-      const lineData = await res.json();
-      const stations = lineData.stations || [];
-
+    async function loadStations(file) {
+      const res = await fetch('/rail/hiroshima/' + file);
+      const data = await res.json();
+      elStation.disabled = false;
       elStation.innerHTML = '<option value="">選択してください</option>';
-      stations.forEach(s => {
+      data.stations.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.code;
         opt.textContent = s.name_ja;
         elStation.appendChild(opt);
       });
-      elStation.disabled = false;
     }
-
-    // ============ イベント紐付け ============
-    elWard.addEventListener('change', () => {
-      const sel = elWard.selectedOptions[0];
-      const path = sel ? sel.dataset.path : '';
-      if (path) loadTownsByWardPath(path);
-      // クリア
-      elTown.value = '';
-      elChome.value = '';
-      elBanchi.value = '';
-    });
-
-    elTown.addEventListener('change', onTownChange);
-
     elLine.addEventListener('change', () => {
-      const sel = elLine.selectedOptions[0];
-      const file = sel ? sel.dataset.file : '';
-      if (file) loadStationsByLineFile(file);
-      // クリア
-      elStation.value = '';
+      const file = elLine.selectedOptions[0].dataset.file;
+      loadStations(file);
     });
 
-    // ============ 初期ロード ============
-    (async function init() {
-      try {
-        await Promise.all([loadWards(), loadLines()]);
-      } catch (e) {
-        console.error(e);
-        const box = document.createElement('div');
-        box.className = 'result-box error';
-        box.innerHTML = '<p>初期データの読み込みに失敗しました。パスかCORS設定をご確認ください。</p>';
-        document.querySelector('#step1').appendChild(box);
-      }
+    // 初期化
+    (async () => {
+      await loadWards();
+      await loadLines();
     })();
   </script>
 </body>

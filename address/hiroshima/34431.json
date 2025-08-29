@@ -1,0 +1,34 @@
+{
+  "wardCode": "34431",
+  "wardName": "大崎上島町",
+  "towns": [
+    {
+      "name": "中野",
+      "chome": []
+    },
+    {
+      "name": "原田",
+      "chome": []
+    },
+    {
+      "name": "大串",
+      "chome": []
+    },
+    {
+      "name": "明石",
+      "chome": []
+    },
+    {
+      "name": "木江",
+      "chome": []
+    },
+    {
+      "name": "東野",
+      "chome": []
+    },
+    {
+      "name": "沖浦",
+      "chome": []
+    }
+  ]
+}

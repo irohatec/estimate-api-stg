@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>不動産査定デモ（Step0→Step2＋メール登録）</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- ルート固定：public/style.css を必ず取得 -->
+  <!-- ルート固定 -->
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -25,7 +25,7 @@
           <label>あなたは個人/法人のどちらですか？</label>
           <div class="field-row">
             <label><input type="radio" name="userType" value="individual" checked /> 個人</label>
-            <label><input type="radio" name="userType" value="corporate" /> 法人</label>
+            <label class="ml-16"><input type="radio" name="userType" value="corporate" /> 法人</label>
           </div>
         </div>
 
@@ -53,7 +53,10 @@
 
     <!-- ===================== Step1: 所在地 & 沿線 ===================== -->
     <section class="card mb-24" id="step1">
-      <h2>STEP 1. 所在地と最寄り駅</h2>
+      <div class="flex-row">
+        <h2>STEP 1. 所在地と最寄り駅</h2>
+        <button id="btnCheckStep1" class="btn-outline">入力チェック</button>
+      </div>
 
       <!-- 所在地 -->
       <div class="grid">
@@ -104,22 +107,27 @@
         </div>
       </div>
 
-      <div class="result-box info mt-16" id="step1Info">
-        <p>入力ルール：</p>
-        <ul>
-          <li>市区町村は必須です</li>
-          <li>番地が空欄のときは <strong>最寄り駅の指定が必須</strong> です</li>
-        </ul>
+      <!-- エラーまとめ（Step1） -->
+      <div class="result-box error mt-16 hidden" id="step1Error">
+        <p class="mb-4"><strong>入力に不備があります。以下をご確認ください。</strong></p>
+        <ul id="step1ErrorList"></ul>
       </div>
 
-      <div class="result-box error mt-12 hidden" id="step1Error">
-        <p id="errMsg">初期データの読み込みに失敗しました。</p>
+      <div class="result-box info mt-12" id="step1Tips">
+        <p class="mb-2"><strong>入力ルール</strong></p>
+        <ul>
+          <li>市区町村は必須です</li>
+          <li>番地が空欄の場合は「最寄り駅の指定」が必須です</li>
+        </ul>
       </div>
     </section>
 
-    <!-- ===================== Step2: 物件情報（構造・階数 等） ===================== -->
+    <!-- ===================== Step2: 物件情報（築年＝西暦セレクト対応） ===================== -->
     <section class="card" id="step2">
-      <h2>STEP 2. 物件情報</h2>
+      <div class="flex-row">
+        <h2>STEP 2. 物件情報</h2>
+        <button id="btnCheckStep2" class="btn-outline">入力チェック</button>
+      </div>
 
       <div class="grid">
         <div class="field">
@@ -145,9 +153,16 @@
           </div>
         </div>
 
+        <!-- 築年（西暦）セレクト -->
         <div class="field">
-          <label for="ageInput">築年数（年）</label>
-          <input id="ageInput" type="number" min="0" step="1" placeholder="例: 20" />
+          <label for="builtYear">築年（建築年・西暦）</label>
+          <select id="builtYear">
+            <!-- JS で 2025 → 1970 を自動生成、最後に 1969年以前 を追加 -->
+          </select>
+          <small class="help">
+            ※査定では <strong>1981年基準</strong>（新耐震）と <strong>2000年基準</strong> を境に補正します。  
+            「新新耐震基準」という用語は一般的ではなく、実務では<strong>2000年基準</strong>を指します。
+          </small>
         </div>
 
         <div class="field">
@@ -194,7 +209,7 @@
           </select>
         </div>
 
-        <!-- ご要望により「規模（総戸数）」と「建物階数（地下）」は削除 -->
+        <!-- ご要望により「規模（総戸数）」「建物階数（地下）」は削除 -->
         <div class="field">
           <label for="bldgFloors">建物階数（地上）</label>
           <input id="bldgFloors" type="number" min="0" placeholder="例: 10" />
@@ -205,6 +220,12 @@
           <input id="unitFloor" type="number" min="0" placeholder="例: 7" />
           <small class="help">マンション/共同住宅のみ入力してください</small>
         </div>
+      </div>
+
+      <!-- エラーまとめ（Step2） -->
+      <div class="result-box error mt-16 hidden" id="step2Error">
+        <p class="mb-4"><strong>入力に不備があります。以下をご確認ください。</strong></p>
+        <ul id="step2ErrorList"></ul>
       </div>
     </section>
 
@@ -221,7 +242,7 @@
       <div class="grid mt-8">
         <div class="field">
           <button class="btn-primary" id="btnRegisterEmail" type="button">査定結果を送る（メール登録）</button>
-          <small class="help">※ボタンは仮実装です。/estimate 連携後に送信処理を有効化します。</small>
+          <small class="help">※現在は仮実装です。/estimate とメール送信は次の工程で有効化します。</small>
         </div>
       </div>
       <div class="result-box placeholder mt-8" id="emailMsg" style="display:none;"></div>
@@ -231,79 +252,91 @@
 
   <!-- ===================== Script ===================== -->
   <script>
-    // 要素参照
-    const elWard = document.querySelector('#wardSelect');
-    const elTown = document.querySelector('#townSelect');
-    const elChome = document.querySelector('#chomeSelect');
-    const elLine = document.querySelector('#lineSelect');
-    const elStation = document.querySelector('#stationSelect');
-    const elErr = document.querySelector('#step1Error');
-    const elErrMsg = document.querySelector('#errMsg');
+    // --------- 要素参照 ---------
+    const $ = (s)=>document.querySelector(s);
+    const elWard = $('#wardSelect');
+    const elTown = $('#townSelect');
+    const elChome = $('#chomeSelect');
+    const elLine = $('#lineSelect');
+    const elStation = $('#stationSelect');
+    const elBuiltYear = $('#builtYear');
 
-    // Step0: 個人/法人 切り替え
+    // Step0
     const userTypeRadios = document.querySelectorAll('input[name="userType"]');
-    const corpNameField = document.querySelector('#corpNameField');
-    const corpContactField = document.querySelector('#corpContactField');
-    function toggleCorpFields() {
-      const v = [...userTypeRadios].find(r => r.checked)?.value;
+    const corpNameField = $('#corpNameField');
+    const corpContactField = $('#corpContactField');
+
+    // --------- ユーティリティ ---------
+    function toggleCorpFields(){
+      const v = [...userTypeRadios].find(r=>r.checked)?.value;
       const corp = (v === 'corporate');
       corpNameField.classList.toggle('hidden', !corp);
       corpContactField.classList.toggle('hidden', !corp);
     }
-    userTypeRadios.forEach(r => r.addEventListener('change', toggleCorpFields));
+    userTypeRadios.forEach(r=>r.addEventListener('change', toggleCorpFields));
     toggleCorpFields();
 
-    // -------- 所在地ロード（固定パス /address/...） --------
-    async function loadWards() {
-      const res = await fetch('/address/hiroshima/index.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error('/address/hiroshima/index.json → ' + res.status);
+    // 西暦セレクト生成：2025→1970、最後に「1969年以前」
+    (function buildYearOptions(){
+      const max = 2025;
+      const min = 1970;
+      elBuiltYear.innerHTML = '<option value="">選択してください</option>';
+      for(let y=max; y>=min; y--){
+        const opt = document.createElement('option');
+        opt.value = String(y);
+        opt.textContent = `${y}年`;
+        elBuiltYear.appendChild(opt);
+      }
+      const older = document.createElement('option');
+      older.value = '1969以前';
+      older.textContent = '1969年以前';
+      elBuiltYear.appendChild(older);
+    })();
+
+    // --------- 所在地 ---------
+    async function loadWards(){
+      const res = await fetch('/address/hiroshima/index.json', {cache:'no-store'});
+      if(!res.ok) throw new Error('/address/hiroshima/index.json → '+res.status);
       const data = await res.json();
-      const wards = data.wards || [];
       elWard.innerHTML = '<option value="">選択してください</option>';
-      wards.forEach(w => {
+      (data.wards||[]).forEach(w=>{
         const opt = document.createElement('option');
         opt.value = w.code;
         opt.textContent = w.name;
-        opt.dataset.path = '/' + w.path; // 例: /address/hiroshima/34103.json
+        opt.dataset.path = '/' + w.path; // /address/hiroshima/34103.json
         elWard.appendChild(opt);
       });
     }
-
-    async function loadTownsByPath(path) {
+    async function loadTownsByPath(path){
       elTown.disabled = true;
       elChome.disabled = true;
       elTown.innerHTML = '<option value="">読み込み中...</option>';
       elChome.innerHTML = '<option value="">丁目なし</option>';
-
-      const res = await fetch(path, { cache: 'no-store' });
-      if (!res.ok) throw new Error(path + ' → ' + res.status);
+      const res = await fetch(path, {cache:'no-store'});
+      if(!res.ok) throw new Error(path+' → '+res.status);
       const wardData = await res.json();
-      const towns = wardData.towns || [];
-
       elTown.innerHTML = '<option value="">選択してください</option>';
-      towns.forEach(t => {
+      (wardData.towns||[]).forEach(t=>{
         const opt = document.createElement('option');
         opt.value = t.name;
         opt.textContent = t.name;
-        opt.dataset.chome = JSON.stringify(t.chome || []);
+        opt.dataset.chome = JSON.stringify(t.chome||[]);
         elTown.appendChild(opt);
       });
-
       elTown.disabled = false;
       elChome.disabled = true;
     }
-
-    function onTownChange() {
+    function onTownChange(){
       const sel = elTown.selectedOptions[0];
-      if (!sel) return;
-      const chomes = JSON.parse(sel.dataset.chome || '[]');
-      if (!chomes.length) {
+      if(!sel) return;
+      const chomes = JSON.parse(sel.dataset.chome||'[]');
+      if(!chomes.length){
         elChome.disabled = true;
         elChome.innerHTML = '<option value="">丁目なし</option>';
-      } else {
+      }else{
         elChome.disabled = false;
         elChome.innerHTML = '<option value="">選択してください</option>';
-        chomes.forEach(c => {
+        chomes.forEach(c=>{
           const opt = document.createElement('option');
           opt.value = c;
           opt.textContent = c;
@@ -312,32 +345,29 @@
       }
     }
 
-    // -------- 路線ロード（固定パス /rail/...） --------
-    async function loadLines() {
-      const res = await fetch('/rail/hiroshima/index.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error('/rail/hiroshima/index.json → ' + res.status);
+    // --------- 路線 ---------
+    async function loadLines(){
+      const res = await fetch('/rail/hiroshima/index.json', {cache:'no-store'});
+      if(!res.ok) throw new Error('/rail/hiroshima/index.json → '+res.status);
       const data = await res.json();
-      const lines = data.lines || [];
       elLine.innerHTML = '<option value="">選択してください</option>';
-      lines.forEach(l => {
+      (data.lines||[]).forEach(l=>{
         const opt = document.createElement('option');
         opt.value = l.code;
         opt.textContent = `${l.company} ${l.name_ja}`;
-        opt.dataset.file = l.file; // 例: hiroden-honsen.json
+        opt.dataset.file = l.file; // hiroden-honsen.json
         elLine.appendChild(opt);
       });
     }
-
-    async function loadStationsByFile(file) {
+    async function loadStationsByFile(file){
       elStation.disabled = true;
       elStation.innerHTML = '<option value="">読み込み中...</option>';
-      const url = '/rail/hiroshima/' + file;
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(url + ' → ' + res.status);
+      const url = '/rail/hiroshima/'+file;
+      const res = await fetch(url, {cache:'no-store'});
+      if(!res.ok) throw new Error(url+' → '+res.status);
       const data = await res.json();
-      const stations = data.stations || [];
       elStation.innerHTML = '<option value="">選択してください</option>';
-      stations.forEach(s => {
+      (data.stations||[]).forEach(s=>{
         const opt = document.createElement('option');
         opt.value = s.code;
         opt.textContent = s.name_ja;
@@ -346,70 +376,102 @@
       elStation.disabled = false;
     }
 
-    // イベント
-    elWard.addEventListener('change', async () => {
-      const sel = elWard.selectedOptions[0];
-      const path = sel ? sel.dataset.path : '';
-      try {
-        if (path) await loadTownsByPath(path);
-        elErr.classList.add('hidden');
-      } catch (err) {
-        elErr.classList.remove('hidden');
-        elErrMsg.textContent = '市区町村の読み込みに失敗しました: ' + err.message;
-      }
-    });
+    // --------- Step1 バリデーション ---------
+    function validateStep1(){
+      const errors = [];
+      const ward = elWard.value;
+      const town = elTown.value;
+      const chome = elChome.disabled ? '' : elChome.value;
+      const banchi = $('#banchiInput').value.trim();
+      const line = elLine.value;
+      const station = elStation.value;
 
+      if(!ward) errors.push('市区町村を選択してください。');
+      if(!banchi && !station) errors.push('番地が未入力のため、最寄り駅の選択が必須です。');
+      if(banchi && !/^[0-9０-９]+(-[0-9０-９]+)*$/.test(banchi)) {
+        errors.push('番地は半角数字とハイフンで入力してください（例：1-2-3）。');
+      }
+      // 将来：住所×路線の整合チェックを入れる場合はここに追加
+
+      const box = $('#step1Error');
+      const list = $('#step1ErrorList');
+      if(errors.length){
+        list.innerHTML = errors.map(e=>`<li>${e}</li>`).join('');
+        box.classList.remove('hidden');
+      }else{
+        box.classList.add('hidden');
+      }
+      return errors.length === 0;
+    }
+
+    // --------- Step2 バリデーション ---------
+    function validateStep2(){
+      const errors = [];
+      const type = $('#typeSelect').value;
+      const area = parseFloat($('#areaInput').value);
+      const unit = $('#areaUnit').value;
+      const byear = $('#builtYear').value;
+
+      if(!type) errors.push('物件種別を選択してください。');
+      if(Number.isNaN(area) || area <= 0) errors.push('面積を正しく入力してください。');
+      if(!byear) errors.push('築年（建築年）を選択してください。');
+
+      const box = $('#step2Error');
+      const list = $('#step2ErrorList');
+      if(errors.length){
+        list.innerHTML = errors.map(e=>`<li>${e}</li>`).join('');
+        box.classList.remove('hidden');
+      }else{
+        box.classList.add('hidden');
+      }
+      return errors.length === 0;
+    }
+
+    // --------- イベント ---------
+    elWard.addEventListener('change', async ()=>{
+      const p = elWard.selectedOptions[0]?.dataset.path;
+      try { if(p) await loadTownsByPath(p); $('#step1Error').classList.add('hidden'); }
+      catch(err){ showStep1LoadError('市区町村の読み込みに失敗しました: '+err.message); }
+    });
     elTown.addEventListener('change', onTownChange);
-
-    elLine.addEventListener('change', async () => {
-      const sel = elLine.selectedOptions[0];
-      const file = sel ? sel.dataset.file : '';
-      try {
-        if (file) await loadStationsByFile(file);
-        elErr.classList.add('hidden');
-      } catch (err) {
-        elErr.classList.remove('hidden');
-        elErrMsg.textContent = '路線/駅の読み込みに失敗しました: ' + err.message;
-      }
+    elLine.addEventListener('change', async ()=>{
+      const f = elLine.selectedOptions[0]?.dataset.file;
+      try { if(f) await loadStationsByFile(f); $('#step1Error').classList.add('hidden'); }
+      catch(err){ showStep1LoadError('路線/駅の読み込みに失敗しました: '+err.message); }
     });
+    function showStep1LoadError(msg){
+      const box = $('#step1Error'); const list = $('#step1ErrorList');
+      list.innerHTML = `<li>${msg}</li>`; box.classList.remove('hidden');
+    }
+    $('#btnCheckStep1').addEventListener('click', validateStep1);
+    $('#btnCheckStep2').addEventListener('click', validateStep2);
 
-    // メール登録（仮）
-    document.querySelector('#btnRegisterEmail').addEventListener('click', () => {
-      const userType = [...document.querySelectorAll('input[name="userType"]')].find(r => r.checked)?.value;
-      const corpName = document.querySelector('#corpName').value.trim();
-      const corpContact = document.querySelector('#corpContact').value.trim();
-
-      // 法人必須チェック（簡易）
-      if (userType === 'corporate') {
-        if (!corpName || !corpContact) {
-          showEmailMsg('法人をご選択の場合は「会社名」と「連絡先」が必要です。', true);
-          return;
-        }
+    // メール登録（現時点は仮）
+    $('#btnRegisterEmail').addEventListener('click', ()=>{
+      const userType = [...document.querySelectorAll('input[name="userType"]')].find(r=>r.checked)?.value;
+      const corpName = $('#corpName').value.trim();
+      const corpContact = $('#corpContact').value.trim();
+      if(userType==='corporate' && (!corpName || !corpContact)){
+        return showEmailMsg('法人をご選択の場合は「会社名」と「連絡先」が必要です。', true);
       }
-
-      const email = document.querySelector('#emailForResult').value.trim();
-      if (!email) {
-        showEmailMsg('メールアドレスを入力してください。', true);
-        return;
-      }
-      // /estimate 連携後に送信処理を実装予定
+      const email = $('#emailForResult').value.trim();
+      if(!email) return showEmailMsg('メールアドレスを入力してください。', true);
+      // 今は登録確認のみ（査定API接続時に送信処理）
       showEmailMsg('メールアドレスを仮登録しました。査定API連携後に送信します。', false);
     });
-
-    function showEmailMsg(msg, isError) {
-      const box = document.querySelector('#emailMsg');
-      box.className = 'result-box ' + (isError ? 'error' : 'info');
-      box.textContent = msg;
-      box.style.display = 'block';
+    function showEmailMsg(msg, isError){
+      const box = $('#emailMsg'); box.className = 'result-box ' + (isError?'error':'info');
+      box.textContent = msg; box.style.display = 'block';
     }
 
     // 初期ロード
-    (async () => {
-      try {
+    (async()=>{
+      try{
         await Promise.all([loadWards(), loadLines()]);
-      } catch (err) {
-        elErr.classList.remove('hidden');
-        elErrMsg.textContent = '初期データの読み込みに失敗しました: ' + err.message;
+      }catch(err){
+        const box = $('#step1Error'), list = $('#step1ErrorList');
+        list.innerHTML = `<li>初期データの読み込みに失敗しました: ${err.message}</li>`;
+        box.classList.remove('hidden');
         console.error(err);
       }
     })();

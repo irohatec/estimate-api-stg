@@ -4,15 +4,8 @@
   <meta charset="UTF-8" />
   <title>不動産査定デモ（Step0→Step2＋メール登録）</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- CSS は public 直下想定。相対で失敗したら JS で差し替えます -->
-  <link id="mainCss" rel="stylesheet" href="style.css" />
-  <script>
-    // CSSのMIME/404対策：読み込み失敗時は絶対パスに切替
-    window.addEventListener('DOMContentLoaded', () => {
-      const link = document.getElementById('mainCss');
-      link.onerror = () => { link.href = '/style.css'; };
-    });
-  </script>
+  <!-- ルート固定：public/style.css を必ず取得 -->
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <div class="wrap">
@@ -69,7 +62,7 @@
           <select id="wardSelect">
             <option value="">選択してください</option>
           </select>
-          <small class="help" id="wardSrc"></small>
+          <small class="help" id="wardSrc">読込: /address/hiroshima/index.json</small>
         </div>
 
         <div class="field">
@@ -100,7 +93,7 @@
           <select id="lineSelect">
             <option value="">選択してください</option>
           </select>
-          <small class="help" id="lineSrc"></small>
+          <small class="help" id="lineSrc">読込: /rail/hiroshima/index.json</small>
         </div>
 
         <div class="field">
@@ -238,7 +231,7 @@
 
   <!-- ===================== Script ===================== -->
   <script>
-    // 共通要素
+    // 要素参照
     const elWard = document.querySelector('#wardSelect');
     const elTown = document.querySelector('#townSelect');
     const elChome = document.querySelector('#chomeSelect');
@@ -246,8 +239,6 @@
     const elStation = document.querySelector('#stationSelect');
     const elErr = document.querySelector('#step1Error');
     const elErrMsg = document.querySelector('#errMsg');
-    const elWardSrc = document.querySelector('#wardSrc');
-    const elLineSrc = document.querySelector('#lineSrc');
 
     // Step0: 個人/法人 切り替え
     const userTypeRadios = document.querySelectorAll('input[name="userType"]');
@@ -262,77 +253,46 @@
     userTypeRadios.forEach(r => r.addEventListener('change', toggleCorpFields));
     toggleCorpFields();
 
-    // 汎用：候補パスを順に試す
-    async function fetchFirstJson(candidates) {
-      let lastErr;
-      for (const url of candidates) {
-        try {
-          const res = await fetch(url, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`${url} → ${res.status}`);
-          const json = await res.json();
-          return { json, url };
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      throw lastErr || new Error('fetchFirstJson failed');
-    }
-
-    // 所在地ロード
+    // -------- 所在地ロード（固定パス /address/...） --------
     async function loadWards() {
-      const { json, url } = await fetchFirstJson([
-        'address/hiroshima/index.json',
-        '/address/hiroshima/index.json',
-        'demo/address/hiroshima/index.json',
-        '/demo/address/hiroshima/index.json'
-      ]);
-      const wards = json.wards || [];
+      const res = await fetch('/address/hiroshima/index.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('/address/hiroshima/index.json → ' + res.status);
+      const data = await res.json();
+      const wards = data.wards || [];
       elWard.innerHTML = '<option value="">選択してください</option>';
       wards.forEach(w => {
         const opt = document.createElement('option');
         opt.value = w.code;
         opt.textContent = w.name;
-        // ward JSON の候補パスも複数保持
-        opt.dataset.paths = JSON.stringify([
-          w.path,                      // 相対
-          '/' + w.path,                // 絶対
-          'demo/' + w.path,            // /demo 配下想定
-          '/demo/' + w.path
-        ]);
+        opt.dataset.path = '/' + w.path; // 例: /address/hiroshima/34103.json
         elWard.appendChild(opt);
       });
-      elWardSrc.textContent = `読込: ${url}`;
     }
 
-    async function loadTownsByCandidatePaths(paths) {
-      let lastErr;
-      for (const p of paths) {
-        try {
-          const res = await fetch(p, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`${p} → ${res.status}`);
-          const data = await res.json();
-          const towns = data.towns || [];
-          elTown.disabled = false;
-          elTown.innerHTML = '<option value="">選択してください</option>';
-          towns.forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.name;
-            opt.textContent = t.name;
-            opt.dataset.chome = JSON.stringify(t.chome || []);
-            elTown.appendChild(opt);
-          });
-          // 丁目初期化
-          elChome.disabled = true;
-          elChome.innerHTML = '<option value="">丁目なし</option>';
-          return p;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      throw lastErr || new Error('loadTowns failed');
+    async function loadTownsByPath(path) {
+      elTown.disabled = true;
+      elChome.disabled = true;
+      elTown.innerHTML = '<option value="">読み込み中...</option>';
+      elChome.innerHTML = '<option value="">丁目なし</option>';
+
+      const res = await fetch(path, { cache: 'no-store' });
+      if (!res.ok) throw new Error(path + ' → ' + res.status);
+      const wardData = await res.json();
+      const towns = wardData.towns || [];
+
+      elTown.innerHTML = '<option value="">選択してください</option>';
+      towns.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.name;
+        opt.textContent = t.name;
+        opt.dataset.chome = JSON.stringify(t.chome || []);
+        elTown.appendChild(opt);
+      });
+
+      elTown.disabled = false;
+      elChome.disabled = true;
     }
 
-    // 町選択 → 丁目反映
     function onTownChange() {
       const sel = elTown.selectedOptions[0];
       if (!sel) return;
@@ -352,78 +312,61 @@
       }
     }
 
-    // 路線ロード
+    // -------- 路線ロード（固定パス /rail/...） --------
     async function loadLines() {
-      const { json, url } = await fetchFirstJson([
-        'rail/hiroshima/index.json',
-        '/rail/hiroshima/index.json',
-        'demo/rail/hiroshima/index.json',
-        '/demo/rail/hiroshima/index.json'
-      ]);
-      const lines = json.lines || [];
+      const res = await fetch('/rail/hiroshima/index.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('/rail/hiroshima/index.json → ' + res.status);
+      const data = await res.json();
+      const lines = data.lines || [];
       elLine.innerHTML = '<option value="">選択してください</option>';
       lines.forEach(l => {
         const opt = document.createElement('option');
         opt.value = l.code;
         opt.textContent = `${l.company} ${l.name_ja}`;
-        opt.dataset.files = JSON.stringify([
-          `rail/hiroshima/${l.file}`,
-          `/rail/hiroshima/${l.file}`,
-          `demo/rail/hiroshima/${l.file}`,
-          `/demo/rail/hiroshima/${l.file}`
-        ]);
+        opt.dataset.file = l.file; // 例: hiroden-honsen.json
         elLine.appendChild(opt);
       });
-      elLineSrc.textContent = `読込: ${url}`;
     }
 
-    async function loadStationsByCandidateFiles(files) {
-      let lastErr;
-      for (const f of files) {
-        try {
-          const res = await fetch(f, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`${f} → ${res.status}`);
-          const data = await res.json();
-          const stations = data.stations || [];
-          elStation.disabled = false;
-          elStation.innerHTML = '<option value="">選択してください</option>';
-          stations.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.code;
-            opt.textContent = s.name_ja;
-            elStation.appendChild(opt);
-          });
-          return f;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      throw lastErr || new Error('loadStations failed');
+    async function loadStationsByFile(file) {
+      elStation.disabled = true;
+      elStation.innerHTML = '<option value="">読み込み中...</option>';
+      const url = '/rail/hiroshima/' + file;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(url + ' → ' + res.status);
+      const data = await res.json();
+      const stations = data.stations || [];
+      elStation.innerHTML = '<option value="">選択してください</option>';
+      stations.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.code;
+        opt.textContent = s.name_ja;
+        elStation.appendChild(opt);
+      });
+      elStation.disabled = false;
     }
 
     // イベント
-    document.querySelector('#wardSelect').addEventListener('change', async (e) => {
-      const sel = e.target.selectedOptions[0];
-      const paths = JSON.parse(sel.dataset.paths || '[]');
+    elWard.addEventListener('change', async () => {
+      const sel = elWard.selectedOptions[0];
+      const path = sel ? sel.dataset.path : '';
       try {
-        const used = await loadTownsByCandidatePaths(paths);
+        if (path) await loadTownsByPath(path);
         elErr.classList.add('hidden');
-        document.querySelector('#wardSrc').textContent += ` / 町読込: ${used}`;
       } catch (err) {
         elErr.classList.remove('hidden');
         elErrMsg.textContent = '市区町村の読み込みに失敗しました: ' + err.message;
       }
     });
 
-    document.querySelector('#townSelect').addEventListener('change', onTownChange);
+    elTown.addEventListener('change', onTownChange);
 
-    document.querySelector('#lineSelect').addEventListener('change', async (e) => {
-      const sel = e.target.selectedOptions[0];
-      const files = JSON.parse(sel.dataset.files || '[]');
+    elLine.addEventListener('change', async () => {
+      const sel = elLine.selectedOptions[0];
+      const file = sel ? sel.dataset.file : '';
       try {
-        const used = await loadStationsByCandidateFiles(files);
+        if (file) await loadStationsByFile(file);
         elErr.classList.add('hidden');
-        document.querySelector('#lineSrc').textContent += ` / 駅読込: ${used}`;
       } catch (err) {
         elErr.classList.remove('hidden');
         elErrMsg.textContent = '路線/駅の読み込みに失敗しました: ' + err.message;
@@ -449,7 +392,7 @@
         showEmailMsg('メールアドレスを入力してください。', true);
         return;
       }
-      // ここで /estimate → /lead などに繋げる（後続ステップ）
+      // /estimate 連携後に送信処理を実装予定
       showEmailMsg('メールアドレスを仮登録しました。査定API連携後に送信します。', false);
     });
 

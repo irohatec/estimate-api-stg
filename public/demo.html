@@ -3,81 +3,86 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>不動産査定デモ</title>
+  <title>不動産簡易査定（リアルタイム概算）</title>
   <link rel="stylesheet" href="./style.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%232563eb'/%3E%3Ctext x='50%25' y='55%25' text-anchor='middle' font-size='36' fill='white'%3EE%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%232563eb'/%3E%3Ctext x='50%25' y='55%25' text-anchor='middle' font-size='36' fill='white'%3E%23%3C/text%3E%3C/svg%3E">
 </head>
 <body>
   <main class="container">
-    <h1 class="title">不動産査定デモ</h1>
-    <p class="breadcrumb">Step0：利用者区分 → Step1：所在地/最寄り駅 → Step2：物件情報 → メール登録 → 査定送信</p>
+    <h1 class="title">不動産 簡易査定</h1>
+    <p class="breadcrumb">STEP0→1→2→3→4→5（入力のたびに価格が上下し精度UP）</p>
+
+    <!-- Sticky 概算カード -->
+    <section id="priceCard" class="price-card">
+      <div class="price-left">
+        <div class="price-label">現在の概算価格（速報値）</div>
+        <div class="price-value"><span id="medianPrice">—</span><span class="yen">円</span></div>
+        <div class="price-range">上下レンジ：<span id="rangeLow">—</span> 〜 <span id="rangeHigh">—</span> 円</div>
+        <div class="price-note">※ 駅・徒歩・角地・採光面などの条件で変動します</div>
+      </div>
+      <div class="price-right">
+        <div class="tags" id="appliedTags"></div>
+        <div class="cta-mini">
+          <span class="muted">完全版レポートはメールでお送りします</span>
+        </div>
+      </div>
+    </section>
 
     <!-- 送信時のみ出す：要約エラー -->
     <section id="errorSummary" class="error-summary hidden" aria-live="polite">
       <div class="error-summary__head">
         <span class="error-summary__icon" aria-hidden="true">⚠</span>
-        入力に不備があります。以下を確認してください。
+        入力に不足があります。以下をご確認ください。
       </div>
       <ol id="errorList" class="error-summary__list"></ol>
     </section>
 
     <form id="estimateForm" novalidate>
-      <!-- Step0 -->
+      <!-- STEP0 -->
       <section class="card">
-        <div class="card__head">STEP 0. 利用者区分</div>
+        <div class="card__head">STEP 0. 申込者区分</div>
         <div class="grid">
-          <div class="field">
-            <label class="label">お申込み者さまの区分</label>
+          <div class="field wide">
             <div class="radio-row" role="radiogroup" aria-label="利用者区分">
               <label class="radio">
-                <input type="radio" name="userType" id="userType-individual" value="individual" checked>
+                <input type="radio" name="userType" value="individual" checked>
                 個人
               </label>
               <label class="radio">
-                <input type="radio" name="userType" id="userType-corporate" value="corporate">
+                <input type="radio" name="userType" value="corporate">
                 法人
               </label>
             </div>
           </div>
 
           <div class="field" data-conditional="corporate">
-            <label for="company" class="label required">会社名（法人の方）</label>
+            <label for="company" class="label required">会社名（法人）</label>
             <input id="company" name="company" class="input" type="text"
-                   placeholder="いろはTEC"
-                   data-label="会社名"
+                   placeholder="いろはTEC" data-label="会社名"
                    data-required-if="userType:corporate">
             <p id="err-company" class="error-text"></p>
           </div>
 
           <div class="field" data-conditional="corporate">
-            <label for="contact" class="label required">連絡先（法人の方）</label>
+            <label for="contact" class="label required">連絡先（法人）</label>
             <input id="contact" name="contact" class="input" type="text"
                    placeholder="090-1234-5678 / support@example.com"
-                   inputmode="email"
-                   autocomplete="email"
+                   inputmode="email" autocomplete="email"
                    data-label="連絡先"
                    data-required-if="userType:corporate"
                    data-validate="emailOrPhone">
             <p id="err-contact" class="error-text"></p>
           </div>
         </div>
-
-        <div class="note">
-          <ul>
-            <li>法人を選んだ場合、会社名と連絡先は必須です。</li>
-            <li>ご入力内容は査定および結果連絡のみに利用します。</li>
-          </ul>
-        </div>
       </section>
 
-      <!-- Step1 -->
+      <!-- STEP1 -->
       <section class="card">
-        <div class="card__head">STEP 1. 所在地と最寄り駅</div>
+        <div class="card__head">STEP 1. エリア</div>
         <div class="grid">
           <div class="field">
             <label for="pref" class="label required">都道府県</label>
-            <select id="pref" name="pref" class="select"
-                    data-label="都道府県" required>
+            <select id="pref" name="pref" class="select" data-label="都道府県" required>
               <option value="">選択してください</option>
               <option value="広島県">広島県</option>
             </select>
@@ -87,16 +92,14 @@
           <div class="field">
             <label for="city" class="label required">市区町村</label>
             <input id="city" name="city" class="input" type="text"
-                   placeholder="広島市中区"
-                   data-label="市区町村" required>
+                   placeholder="広島市中区" data-label="市区町村" required>
             <p id="err-city" class="error-text"></p>
           </div>
 
           <div class="field">
-            <label for="town" class="label required">町名</label>
+            <label for="town" class="label">町名</label>
             <input id="town" name="town" class="input" type="text"
-                   placeholder="宇品神田"
-                   data-label="町名" required>
+                   placeholder="宇品神田" data-label="町名">
             <p id="err-town" class="error-text"></p>
           </div>
 
@@ -109,60 +112,12 @@
             </select>
             <p id="err-chome" class="error-text"></p>
           </div>
-
-          <div class="field">
-            <label for="banchi" class="label">番地</label>
-            <input id="banchi" name="banchi" class="input" type="text"
-                   placeholder="例：1-2-3"
-                   data-label="番地">
-            <p id="err-banchi" class="error-text"></p>
-          </div>
-
-          <div class="field">
-            <label for="line" class="label required">路線</label>
-            <select id="line" name="line" class="select"
-                    data-label="路線" required>
-              <option value="">選択してください</option>
-              <option value="広島電鉄 本線">広島電鉄 本線</option>
-              <option value="広島電鉄 宮島線">広島電鉄 宮島線</option>
-              <option value="その他">その他</option>
-            </select>
-            <p id="err-line" class="error-text"></p>
-          </div>
-
-          <div class="field">
-            <label for="station" class="label required">最寄り駅</label>
-            <select id="station" name="station" class="select"
-                    data-label="最寄り駅" required disabled>
-              <option value="">先に路線を選択してください</option>
-            </select>
-            <p id="err-station" class="error-text"></p>
-          </div>
-
-          <div class="field">
-            <label for="minutes" class="label required">駅から徒歩</label>
-            <div class="inline">
-              <select id="minutes" name="minutes" class="select narrow"
-                      data-label="徒歩分" required data-validate="minutes">
-                <option value="">選択</option>
-              </select>
-              <span>分</span>
-            </div>
-            <p id="err-minutes" class="error-text"></p>
-          </div>
-        </div>
-
-        <div class="note">
-          <ul>
-            <li>市区町村は必ずご入力ください。</li>
-            <li>電停/駅の指定は「路線 → 最寄り駅」の順で必須です。</li>
-          </ul>
         </div>
       </section>
 
-      <!-- Step2 -->
+      <!-- STEP2 -->
       <section class="card">
-        <div class="card__head">STEP 2. 物件情報</div>
+        <div class="card__head">STEP 2. 物件の基本</div>
         <div class="grid">
           <div class="field">
             <label for="ptype" class="label required">物件種別</label>
@@ -188,82 +143,226 @@
             <p id="err-area" class="error-text"></p>
           </div>
 
-          <div class="field">
+          <div class="field" id="builtField">
             <label for="builtYear" class="label required">築年（西暦）</label>
             <select id="builtYear" name="builtYear" class="select" data-label="築年" required>
               <option value="">選択してください</option>
             </select>
             <p id="err-builtYear" class="error-text"></p>
             <p class="help">
-              耐震基準の目安：<strong>1981年（新耐震）</strong>で大幅強化、<strong>2000年基準</strong>で木造の接合や耐力壁のバランス等を追加強化。
+              耐震の目安：<strong>1981年（新耐震）</strong>で大幅強化、<strong>2000年基準</strong>で木造の接合・耐力壁バランス等を追加強化。
             </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP3 -->
+      <section class="card">
+        <div class="card__head">STEP 3. 交通（駅力→徒歩）</div>
+        <div class="grid">
+          <div class="field">
+            <label for="line" class="label">路線</label>
+            <select id="line" name="line" class="select" data-label="路線">
+              <option value="">未選択</option>
+              <option value="広島電鉄 本線">広島電鉄 本線</option>
+              <option value="広島電鉄 宮島線">広島電鉄 宮島線</option>
+            </select>
+            <p id="err-line" class="error-text"></p>
+          </div>
+
+          <div class="field">
+            <label for="station" class="label">最寄り駅</label>
+            <select id="station" name="station" class="select" data-label="最寄り駅" disabled>
+              <option value="">先に路線を選択してください</option>
+            </select>
+            <p id="err-station" class="error-text"></p>
+          </div>
+
+          <div class="field">
+            <label for="minutes" class="label">徒歩（分）</label>
+            <div class="inline">
+              <select id="minutes" name="minutes" class="select narrow" data-label="徒歩分" data-validate="minutes">
+                <option value="">未選択</option>
+              </select>
+              <span>分</span>
+            </div>
+            <p id="err-minutes" class="error-text"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP4 -->
+      <section class="card">
+        <div class="card__head">STEP 4. 敷地・建物の特徴</div>
+        <div class="grid">
+          <div class="field">
+            <label class="label">角地ですか？</label>
+            <div class="radio-row">
+              <label class="radio">
+                <input type="radio" name="corner_lot" value="no" checked> いいえ
+              </label>
+              <label class="radio">
+                <input type="radio" name="corner_lot" value="yes"> はい（角地）
+              </label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="aspect" class="label">採光面（主開口の方位）</label>
+            <select id="aspect" name="aspect" class="select" data-label="採光面">
+              <option value="">未選択</option>
+              <option value="S">南</option>
+              <option value="SE">南東</option>
+              <option value="SW">南西</option>
+              <option value="E">東</option>
+              <option value="W">西</option>
+              <option value="NE">北東</option>
+              <option value="NW">北西</option>
+              <option value="N">北</option>
+            </select>
+            <p class="help">角地＋方位はセットで評価（例：南東角地は評価が高い傾向）</p>
           </div>
 
           <div class="field">
             <label for="structure" class="label">構造</label>
             <select id="structure" name="structure" class="select" data-label="構造">
-              <option value="">選択してください</option>
-              <option>木造</option><option>鉄骨造</option><option>鉄筋コンクリート造</option>
+              <option value="">未選択</option>
+              <option>木造</option>
+              <option>鉄骨造</option>
+              <option>鉄筋コンクリート造</option>
               <option>鉄骨鉄筋コンクリート造</option>
             </select>
-            <p id="err-structure" class="error-text"></p>
           </div>
 
-          <div class="field">
-            <label for="floors" class="label">建物階数（地上）</label>
-            <input id="floors" name="floors" class="input" type="number" min="1" step="1"
-                   placeholder="例：10" data-label="建物階数">
-            <p id="err-floors" class="error-text"></p>
+          <div class="field" id="floorField">
+            <label for="floor" class="label">所在階（マンションのみ）</label>
+            <input id="floor" name="floor" class="input" type="number" min="1" step="1"
+                   placeholder="例：10" data-label="所在階">
+            <p id="err-floor" class="error-text"></p>
           </div>
         </div>
       </section>
 
-      <!-- メール登録 / 送信 -->
+      <!-- STEP5 -->
       <section class="card">
-        <div class="card__head">査定結果をメールで受け取る</div>
+        <div class="card__head">STEP 5. 結果の受け取り</div>
         <div class="grid">
-          <div class="field">
-            <label for="email" class="label required">メールアドレス</label>
+          <div class="field wide">
+            <label for="email" class="label required">メールアドレス（完全版レポート送付）</label>
             <input id="email" name="email" class="input" type="email"
-                   placeholder="example@example.com"
-                   inputmode="email" autocomplete="email"
+                   placeholder="example@example.com" inputmode="email" autocomplete="email"
                    data-label="メールアドレス" required>
             <p id="err-email" class="error-text"></p>
+            <p class="help">中央値＋上下幅、徒歩逓減グラフ、根拠サマリーを送付します。営業電話は致しません。</p>
           </div>
         </div>
 
         <div class="actions">
-          <button id="submitBtn" type="submit" class="btn" disabled>査定する</button>
-          <span id="submitHint" class="muted">未入力の項目があります</span>
+          <button id="submitBtn" type="submit" class="btn">完全版をメールで受け取る</button>
+          <span id="submitHint" class="muted">未入力がある場合は上部に案内が出ます</span>
         </div>
 
-        <div id="resultBox" class="result muted">査定結果はここに表示されます。</div>
+        <div id="resultBox" class="result muted">入力に応じた概算は上部カードに自動反映されます。</div>
       </section>
     </form>
   </main>
 
   <script>
-    // -------------------------------
-    // 初期データ
-    // -------------------------------
+    // =========================
+    // 初期データ・定数
+    // =========================
     const lineStations = {
-      "広島電鉄 本線": ["紙屋町東", "紙屋町西", "八丁堀", "立町", "銀山町", "稲荷町", "的場町"],
-      "広島電鉄 宮島線": ["西広島", "草津", "井口", "修大協創中高前", "商工センター入口", "草津南", "古江"]
+      "広島電鉄 本線": ["紙屋町東","紙屋町西","八丁堀","立町","銀山町","稲荷町","的場町"],
+      "広島電鉄 宮島線": ["西広島","草津","井口","修大協創中高前","商工センター入口","草津南","古江"]
     };
 
-    // DOM参照
+    // 駅ごとの基準単価（円/㎡） ※ダミー値。/estimate実装後に置換
+    const stationBaseline = {
+      "紙屋町東": 1300000, "紙屋町西": 1250000, "八丁堀": 1280000, "立町": 1200000, "銀山町": 1150000, "稲荷町": 1100000, "的場町": 1080000,
+      "西広島": 950000, "草津": 820000, "井口": 840000, "修大協創中高前": 860000, "商工センター入口": 880000, "草津南": 800000, "古江": 810000
+    };
+
+    // 市区町村の基準単価（円/㎡） ※簡易。該当がなければdefault
+    const cityBaseline = {
+      "広島市中区": 1050000,
+      "広島市西区": 820000,
+      "default": 700000
+    };
+
+    // 係数テーブル
+    const builtCoeff = (year, ptype) => {
+      if (ptype === "土地") return 1.0; // 土地は築年無関係
+      if (!year || year === "1969以前") return 0.80;
+      const y = Number(year);
+      if (y <= 1980) return 0.86;        // 旧耐震
+      if (y <= 1999) return 0.92;        // 新耐震〜改正前
+      if (y <= 2009) return 0.98;        // 2000年基準〜
+      return 1.02;                       // 2010年以降少し強気
+    };
+
+    const walkCoeff = (m) => {
+      if (!m) return 1.00;
+      m = Number(m);
+      if (m <= 3)  return 1.00;
+      if (m <= 5)  return 0.98;
+      if (m <= 10) return 0.95;
+      if (m <= 15) return 0.92;
+      if (m <= 20) return 0.88;
+      if (m <= 30) return 0.80;
+      if (m <= 45) return 0.72;
+      return 0.65; // 46-60
+    };
+
+    const structureCoeff = (s, ptype) => {
+      if (ptype === "土地" || !s) return 1.0;
+      if (s === "木造") return 0.96;
+      if (s === "鉄骨造") return 0.98;
+      if (s === "鉄筋コンクリート造") return 1.00;
+      if (s === "鉄骨鉄筋コンクリート造") return 1.02;
+      return 1.0;
+    };
+
+    const floorCoeff = (floor, ptype) => {
+      if (ptype !== "マンション" || !floor) return 1.0;
+      const f = Number(floor);
+      if (f >= 15) return 1.04;
+      if (f >= 10) return 1.03;
+      if (f >= 5)  return 1.01;
+      if (f === 1) return 0.99;
+      return 1.0;
+    };
+
+    // 採光面の基礎係数（角地でない場合）
+    const aspectBase = {
+      "S": 1.03, "SE": 1.04, "SW": 1.02, "E": 1.02, "W": 1.00, "NE": 1.01, "NW": 1.00, "N": 0.95
+    };
+    // 角地ブースト（方位に応じて追加上乗せ）
+    const cornerBoost = {
+      "S": 0.03, "SE": 0.05, "SW": 0.03, "E": 0.02, "W": 0.00, "NE": 0.01, "NW": 0.00, "N": -0.01
+    };
+
+    const timeFactor = 1.00; // 相場係数（将来更新）
+
+    // =========================
+    // DOM要素参照
+    // =========================
     const form = document.getElementById("estimateForm");
     const errorSummary = document.getElementById("errorSummary");
     const errorList = document.getElementById("errorList");
     const submitBtn = document.getElementById("submitBtn");
     const submitHint = document.getElementById("submitHint");
-    const lineSel = document.getElementById("line");
-    const stationSel = document.getElementById("station");
+    const priceEls = {
+      median: document.getElementById("medianPrice"),
+      low: document.getElementById("rangeLow"),
+      high: document.getElementById("rangeHigh"),
+      tags: document.getElementById("appliedTags")
+    };
 
-    // ====== ここで最初に全フィールドを取得（順序重要） ======
+    // 全フィールド（順序重要：監視設定より先に取得）
     const allInputs = form.querySelectorAll("input, select, textarea");
 
-    // 1〜60分のプルダウン
+    // 動的セレクトの初期化
+    // 徒歩（1〜60）
     const minutesSelect = document.getElementById("minutes");
     for (let i = 1; i <= 60; i++) {
       const opt = document.createElement("option");
@@ -271,15 +370,14 @@
       opt.textContent = String(i);
       minutesSelect.appendChild(opt);
     }
-
-    // 築年（西暦）1970〜現年＋「1969年以前」
+    // 築年（1970〜現年＋1969年以前）
     const builtYearSelect = document.getElementById("builtYear");
-    const now = new Date().getFullYear();
+    const nowYear = new Date().getFullYear();
     const older = document.createElement("option");
     older.value = "1969以前";
     older.textContent = "1969年以前";
     builtYearSelect.appendChild(older);
-    for (let y = now; y >= 1970; y--) {
+    for (let y = nowYear; y >= 1970; y--) {
       const opt = document.createElement("option");
       opt.value = String(y);
       opt.textContent = `${y}年`;
@@ -287,6 +385,8 @@
     }
 
     // 路線→駅 連動
+    const lineSel = document.getElementById("line");
+    const stationSel = document.getElementById("station");
     lineSel.addEventListener("change", () => {
       stationSel.innerHTML = "";
       if (!lineSel.value || !lineStations[lineSel.value]) {
@@ -299,63 +399,59 @@
       }
       markDirty(lineSel);
       validateField(stationSel);
-      updateSubmitState();
+      scheduleRecalc();
     });
 
-    // 法人→会社名/連絡先 必須化
-    const userTypeRadios = document.querySelectorAll('input[name="userType"]');
+    // 種別により項目の表示切替（築年/所在階）
+    const ptypeSel = document.getElementById("ptype");
+    const builtField = document.getElementById("builtField");
+    const floorField = document.getElementById("floorField");
+    function applyPtypeVisibility() {
+      const ptype = ptypeSel.value;
+      builtField.style.display = (ptype === "土地") ? "none" : "";
+      floorField.style.display = (ptype === "マンション") ? "" : "none";
+    }
+    ptypeSel.addEventListener("change", () => {
+      markDirty(ptypeSel);
+      applyPtypeVisibility();
+      scheduleRecalc();
+    });
+    applyPtypeVisibility();
+
+    // 法人必須切替
     function applyCorporateRequired() {
-      const isCorp = document.querySelector('input[name="userType"]:checked').value === "corporate";
+      const isCorp = form.querySelector('input[name="userType"]:checked').value === "corporate";
       document.querySelectorAll('[data-conditional]').forEach(el => {
         el.style.display = isCorp ? "" : "none";
       });
-      ["company", "contact"].forEach(id => {
+      ["company","contact"].forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-          validateField(el);
-        }
+        if (el) validateField(el);
       });
-      updateSubmitState();
     }
-    userTypeRadios.forEach(r => r.addEventListener("change", () => {
-      markDirty(r);
-      applyCorporateRequired();
-    }));
+    form.querySelectorAll('input[name="userType"]').forEach(r => {
+      r.addEventListener("change", () => {
+        markDirty(r);
+        applyCorporateRequired();
+      });
+    });
+    applyCorporateRequired();
 
-    // -------------------------------
+    // =========================
     // バリデーション基盤
-    // -------------------------------
+    // =========================
     let submittedOnce = false;
 
     function markDirty(el) {
       el.dataset.dirty = "1";
     }
 
-    // 各フィールドに監視を設定
-    allInputs.forEach(el => {
-      el.addEventListener("input", () => {
-        markDirty(el);
-        validateField(el);
-        updateSubmitState();
-      });
-      el.addEventListener("change", () => {
-        markDirty(el);
-        validateField(el);
-        updateSubmitState();
-      });
-      el.addEventListener("blur", () => {
-        markDirty(el);
-        validateField(el);
-        updateSubmitState();
-      });
-    });
-
     function isRequired(el) {
       const cond = el.dataset.requiredIf;
       if (!cond) return el.required;
       const [key, val] = cond.split(":");
       if (key === "userType") {
-        const selected = document.querySelector('input[name="userType"]:checked')?.value;
+        const selected = form.querySelector('input[name="userType"]:checked')?.value;
         return selected === val;
       }
       return el.required;
@@ -365,19 +461,19 @@
       const id = el.id;
       const p = document.getElementById(`err-${id}`);
       if (p) p.textContent = msg || "";
-      el.classList.toggle("invalid", !!msg);
+      if (el.classList) {
+        el.classList.toggle("invalid", !!msg);
+      }
       el.setAttribute("aria-invalid", !!msg);
     }
 
     function validateField(el) {
       const label = el.dataset.label || el.name || "項目";
-      const shouldShowInline = el.dataset.dirty === "1" || submittedOnce;
+      const showInline = el.dataset.dirty === "1" || submittedOnce;
       const need = isRequired(el);
       let err = "";
 
-      if (need && !el.value) {
-        err = `${label}を入力・選択してください`;
-      }
+      if (need && !el.value) err = `${label}を入力・選択してください`;
 
       if (!err && el.dataset.validate === "minutes" && el.value) {
         const v = Number(el.value);
@@ -400,7 +496,7 @@
         if (lineSel.value && !el.value) err = "最寄り駅を選択してください";
       }
 
-      if (shouldShowInline) setFieldError(el, err); else setFieldError(el, "");
+      if (showInline) setFieldError(el, err); else setFieldError(el, "");
       return err;
     }
 
@@ -410,17 +506,9 @@
         const msg = validateField(el);
         if (msg) errors.push({ id: el.id, label: el.dataset.label || el.name, msg });
       });
-      const isCorp = document.querySelector('input[name="userType"]:checked').value === "corporate";
-      if (!isCorp) return errors.filter(e => !["company", "contact"].includes(e.id));
+      const isCorp = form.querySelector('input[name="userType"]:checked').value === "corporate";
+      if (!isCorp) return errors.filter(e => !["company","contact"].includes(e.id));
       return errors;
-    }
-
-    function updateSubmitState() {
-      const errs = collectErrors();
-      submitBtn.disabled = errs.length > 0;
-      submitHint.textContent = errs.length > 0 ? "未入力の項目があります" : "送信できます";
-      submitHint.classList.toggle("ok", errs.length === 0);
-      if (!submittedOnce) errorSummary.classList.add("hidden");
     }
 
     function renderErrorSummary(errs) {
@@ -447,11 +535,142 @@
       setTimeout(() => el.focus({ preventScroll: true }), 320);
     }
 
-    // 初期化（順序：監視→法人必須→状態反映）
-    applyCorporateRequired();
-    updateSubmitState();
+    // 各フィールドに監視を設定（リアルタイム概算）
+    allInputs.forEach(el => {
+      el.addEventListener("input", () => { markDirty(el); validateField(el); scheduleRecalc(); });
+      el.addEventListener("change", () => { markDirty(el); validateField(el); scheduleRecalc(); });
+      el.addEventListener("blur", () => { markDirty(el); validateField(el); scheduleRecalc(); });
+    });
 
-    // 送信処理
+    // =========================
+    // 概算ロジック（フロント仮）
+    // =========================
+    let recalcTimer = null;
+    const scheduleRecalc = () => {
+      if (recalcTimer) clearTimeout(recalcTimer);
+      recalcTimer = setTimeout(recalcAndRender, 300); // デバウンス
+    };
+
+    function getFormValues() {
+      const v = {};
+      v.pref = byId("pref").value;
+      v.city = byId("city").value.trim();
+      v.town = byId("town").value.trim();
+      v.chome = byId("chome").value;
+      v.ptype = byId("ptype").value;
+      v.area = parseFloat(byId("area").value || "0");
+      v.areaUnit = byId("areaUnit").value;
+      v.builtYear = byId("builtYear").value;
+      v.line = byId("line").value;
+      v.station = byId("station").value;
+      v.minutes = byId("minutes").value ? parseInt(byId("minutes").value, 10) : null;
+      v.corner_lot = form.querySelector('input[name="corner_lot"]:checked')?.value === "yes";
+      v.aspect = byId("aspect").value;
+      v.structure = byId("structure").value;
+      v.floor = byId("floor").value ? parseInt(byId("floor").value, 10) : null;
+      return v;
+    }
+
+    function sqmFrom(area, unit) {
+      if (!area) return 0;
+      return unit === "tsubo" ? area * 3.305785 : area;
+    }
+
+    function chooseBaseline(city, station) {
+      if (station && stationBaseline[station]) return { ppsqm: stationBaseline[station], source: `駅基準：${station}` };
+      const key = cityBaseline[city] ? city : "default";
+      return { ppsqm: cityBaseline[key], source: `市区町村基準：${key}` };
+    }
+
+    function orientationCoeff(aspect, corner) {
+      if (!aspect) return corner ? 1.02 : 1.00; // 角地のみ少し上げる
+      const base = aspectBase[aspect] ?? 1.00;
+      if (corner) {
+        const boost = cornerBoost[aspect] ?? 0.0;
+        return (base + boost);
+      }
+      return base;
+    }
+
+    function roundTo(value, step) {
+      return Math.round(value / step) * step;
+    }
+
+    function recalcAndRender() {
+      const v = getFormValues();
+      const tags = [];
+
+      // 面積
+      const sqm = sqmFrom(v.area, v.areaUnit);
+      if (sqm > 0) tags.push(`面積 ${sqm.toFixed(1)}㎡`);
+
+      // 基準単価
+      const base = chooseBaseline(v.city, v.station);
+      tags.push(base.source);
+
+      // 係数
+      const kBuilt = builtCoeff(v.builtYear, v.ptype);
+      const kWalk  = walkCoeff(v.minutes);
+      const kStr   = structureCoeff(v.structure, v.ptype);
+      const kFloor = floorCoeff(v.floor, v.ptype);
+      const kOrient = orientationCoeff(v.aspect, v.corner_lot);
+
+      if (v.station) tags.push("駅 反映");
+      else tags.push("駅 未入力");
+
+      if (v.minutes) tags.push(`徒歩 ${v.minutes}分`);
+      else tags.push("徒歩 未入力");
+
+      if (v.corner_lot) tags.push("角地 反映");
+      if (v.aspect) tags.push(`採光 ${aspectLabel(v.aspect)}`);
+
+      if (v.ptype) tags.push(`種別 ${v.ptype}`);
+      if (v.builtYear && v.ptype !== "土地") tags.push(`築 ${v.builtYear}`);
+
+      // 価格算定
+      const unit = base.ppsqm * kBuilt * kWalk * kStr * kFloor * kOrient * timeFactor;
+      const median = roundTo(unit * sqm, 100000); // 10万円単位
+
+      // 不確実性（レンジ幅）：要素が埋まるほど狭まる
+      const missing = [
+        !v.station, !v.minutes,
+        (v.ptype !== "土地" && !v.builtYear)
+      ].filter(Boolean).length;
+      let band = 0.12; // ±12%から
+      if (missing === 2) band = 0.10;
+      if (missing === 1) band = 0.08;
+      if (missing === 0) band = 0.06;
+
+      const low  = roundTo(median * (1 - band), 100000);
+      const high = roundTo(median * (1 + band), 100000);
+
+      renderPrice(median, low, high, tags);
+    }
+
+    function aspectLabel(code) {
+      return ({S:"南",SE:"南東",SW:"南西",E:"東",W:"西",NE:"北東",NW:"北西",N:"北"})[code] || code;
+    }
+
+    function renderPrice(median, low, high, tags) {
+      priceEls.median.textContent = isFinite(median) && median > 0 ? median.toLocaleString() : "—";
+      priceEls.low.textContent = isFinite(low) && low > 0 ? low.toLocaleString() : "—";
+      priceEls.high.textContent = isFinite(high) && high > 0 ? high.toLocaleString() : "—";
+
+      priceEls.tags.innerHTML = "";
+      tags.forEach(t => {
+        const span = document.createElement("span");
+        span.className = "tag";
+        span.textContent = t;
+        priceEls.tags.appendChild(span);
+      });
+    }
+
+    // 初回描画
+    scheduleRecalc();
+
+    // =========================
+    // 送信処理（/estimateは次チャットで実装）
+    // =========================
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       submittedOnce = true;
@@ -465,51 +684,25 @@
         return;
       }
 
-      const payload = {
-        userType: document.querySelector('input[name="userType"]:checked').value,
-        company: document.getElementById("company").value || null,
-        contact: document.getElementById("contact").value || null,
-        address: {
-          pref: document.getElementById("pref").value,
-          city: document.getElementById("city").value,
-          town: document.getElementById("town").value,
-          chome: document.getElementById("chome").value || null,
-          banchi: document.getElementById("banchi").value || null,
-        },
-        line: document.getElementById("line").value,
-        station: document.getElementById("station").value,
-        walk_minutes: Number(document.getElementById("minutes").value),
-        property: {
-          type: document.getElementById("ptype").value,
-          area: Number(document.getElementById("area").value),
-          area_unit: document.getElementById("areaUnit").value,
-          built_year: document.getElementById("builtYear").value,
-          structure: document.getElementById("structure").value || null,
-          floors: document.getElementById("floors").value ? Number(document.getElementById("floors").value) : null,
-        },
-        email: document.getElementById("email").value
-      };
-
       const resultBox = document.getElementById("resultBox");
       resultBox.className = "result muted";
-      resultBox.textContent = "査定計算中…";
+      resultBox.textContent = "送信中…（完全版レポートを作成しています）";
 
+      // フロント概算をそのままメール送信に使う（次チャットでサーバ実装）
       try {
-        const res = await fetch("/estimate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const json = await res.json();
-
+        // ここで /lead 保存 → /estimate → mailer を実装予定
+        // デモでは成功表示のみ
+        await new Promise(r => setTimeout(r, 600));
         resultBox.className = "result success";
-        resultBox.textContent = `概算価格：${(json.price ?? 0).toLocaleString()} 円（参考）`;
+        resultBox.textContent = "送信完了！メールをご確認ください。（サーバ実装は次チャットで行います）";
       } catch (err) {
         resultBox.className = "result danger";
-        resultBox.textContent = "サーバーとの通信に失敗しました。（/estimate は次チャットで実装予定）";
+        resultBox.textContent = "送信に失敗しました。時間をおいてお試しください。";
       }
     });
+
+    // ユーティリティ
+    function byId(id){ return document.getElementById(id); }
   </script>
 </body>
 </html>
